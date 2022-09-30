@@ -4,12 +4,15 @@ import torch
 from PIL import Image, ImageOps
 print(torch.__version__)
 import piq
+"""### ConvLSTM """
 from model import *
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import multiprocessing as mp
 from torchsummary import summary
+
+"""### Preparing Data"""
 import numpy as np
 from torch.optim import Adam
 from torch.utils.data import DataLoader
@@ -105,9 +108,9 @@ train_data = CustomDataset(np.asarray(train_data_lr),np.asarray(train_data_hr))
 val_data = CustomDataset(np.asarray(val_data_lr),np.asarray(val_data_hr))
 test_data = CustomDataset(np.asarray(test_data_lr),np.asarray(train_data_hr))
 
-train_loader = DataLoader(train_data, batch_size=8, shuffle=False, num_workers=2)
-val_loader = DataLoader(val_data, batch_size=8, shuffle=False, num_workers=2)
-test_loader = DataLoader(test_data, batch_size=8, shuffle=False, num_workers=2)
+train_loader = DataLoader(train_data, batch_size=32, shuffle=False, num_workers=4)
+val_loader = DataLoader(val_data, batch_size=32, shuffle=False, num_workers=4)
+test_loader = DataLoader(test_data, batch_size=32, shuffle=False, num_workers=4)
 
 """### Defining Model"""
 
