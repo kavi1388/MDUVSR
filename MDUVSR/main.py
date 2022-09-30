@@ -4,15 +4,12 @@ import torch
 from PIL import Image, ImageOps
 print(torch.__version__)
 import piq
-"""### ConvLSTM """
 from model import *
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import multiprocessing as mp
 from torchsummary import summary
-
-"""### Preparing Data"""
 import numpy as np
 from torch.optim import Adam
 from torch.utils.data import DataLoader
