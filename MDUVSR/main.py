@@ -1,4 +1,5 @@
 import os
+import time
 
 import torch
 from PIL import Image, ImageOps
@@ -9,7 +10,7 @@ from model import *
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
-import multiprocessing as mp
+import torch.optim as optim
 from torchsummary import summary
 
 """### Preparing Data"""
@@ -108,9 +109,9 @@ train_data = CustomDataset(np.asarray(train_data_lr),np.asarray(train_data_hr))
 val_data = CustomDataset(np.asarray(val_data_lr),np.asarray(val_data_hr))
 test_data = CustomDataset(np.asarray(test_data_lr),np.asarray(train_data_hr))
 
-train_loader = DataLoader(train_data, batch_size=32, shuffle=False, num_workers=4)
-val_loader = DataLoader(val_data, batch_size=32, shuffle=False, num_workers=4)
-test_loader = DataLoader(test_data, batch_size=32, shuffle=False, num_workers=4)
+train_loader = DataLoader(train_data, batch_size=16, shuffle=False, num_workers=2)
+val_loader = DataLoader(val_data, batch_size=16, shuffle=False, num_workers=2)
+test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=2)
 
 """### Defining Model"""
 
@@ -169,58 +170,138 @@ class CharbonnierLoss(nn.Module):
 
 """### Training"""
 
-
-optim = Adam(model.parameters(), lr=1e-4)
+scaler = torch.cuda.amp.GradScaler()
+optimizer = optim.AdamW(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
 
 # criterion = nn.L1Loss()
 criterion = CharbonnierLoss()
 num_epochs = epochs
 
 # model.to(device)
-for epoch in range(1, num_epochs + 1):
-
+for epoch in range(num_epochs//2):
+    psnr = []
+    ssim = []
+    lpips = []
     train_loss = 0
+    ssim_best = 0
+    psnr_test = []
+    ssim_test = []
+    lpips_test = []
     model.train()
+    st = time.time()
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1].to(device)
-        # print(f'input {input.size()}')
-        # plt.figure()
-        # plt.title('Input')
-        # plt.imshow(input[-1][0].cpu())
-        # print(f'target {target.size()}')
+        if batch_num % 200:
+            print(f'batch_num {batch_num}')
         output = model(input.cuda())
-        # plt.figure()
-        # plt.imshow(output.cpu()[-1][0].detach().numpy())
         loss = criterion(output, target.cuda())
         loss.backward()
-        optim.step()
-        optim.zero_grad()
+        optimizer.step()
+        optimizer.zero_grad()
         train_loss += loss.item()
+        psnr.append(piq.psnr(output, target.cuda(), data_range=255., reduction='mean'))
+        ssim.append(piq.ssim(output, target.cuda(), data_range=255.))
+        # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
-
+    psnr_avg= sum(psnr)/len(train_loader.dataset)
+    ssim_avg= sum(ssim)/len(train_loader.dataset)
+    # lpips_avg= sum(lpips)/len(train_loader.dataset)
+    psnr_max = max(psnr)
+    ssim_max = max(ssim)
+    # lpips_max = max(lpips)
     val_loss = 0
     model.eval()
     with torch.no_grad():
         for input, target in val_loader:
             output = model(input.cuda())
             loss = criterion(output, target.cuda())
+            psnr_test.append(piq.psnr(output, target.cuda(), data_range=255., reduction='mean'))
+            ssim_test.append(piq.ssim(output, target.cuda(), data_range=255.))
+            # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
+
     val_loss /= len(val_loader.dataset)
+    psnr_test_avg = sum(psnr_test)/len(val_loader.dataset)
+    ssim_test_avg = sum(ssim_test)/len(val_loader.dataset)
+    # lpips_test_avg = sum(lpips_test)/len(val_loader.dataset)
+    psnr_test_max = max(psnr_test)
+    ssim_test_max = max(ssim_test)
+    # lpips_test_max = max(lpips_test)
 
-    print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f}\n".format(
-        epoch, train_loss, val_loss))
 
 
-"""### Save the Model"""
+    print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
+        epoch+1, train_loss, val_loss, time.time()-st))
+    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)} and Test PSNR avg {round(psnr_test_avg, 2)}, test PSNR max {round(psnr_test_max,2)}')
+    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)} and Test SSIM avg {round(ssim_test_avg,2)}, test SSIM max {round(ssim_test_max,2)}')
 
-params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable num_channels={all_lr_data[0].shape[0]} num_kernels={all_lr_data[0].shape[1]//2},' \
-         f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
-         f'frame_size={(all_lr_data[0].shape[1],all_lr_data[0].shape[2])}, ' \
-         f'scale={scale}  {name}'
-PATH = f'mdu-vsr-customdataser-{params}.pth'
-torch.save(model.state_dict(), PATH)
-model.load_state_dict(torch.load(PATH))
+    if ssim_max > ssim_best:
+
+        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable num_channels={all_lr_data[0].shape[0]} num_kernels={all_lr_data[0].shape[1]//2},' \
+                 f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
+                 f'frame_size={(all_lr_data[0].shape[1],all_lr_data[0].shape[2])}, ' \
+                 f'scale={scale}  {name}'
+        PATH = f'mdu-vsr-customdataser-{params}.pth'
+        torch.save(model.state_dict(), PATH)
+        model.load_state_dict(torch.load(PATH))
+
+optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+for epoch in range(num_epochs//2):
+    for batch_num, data in enumerate(train_loader, 0):
+        input, target = data[0].to(device), data[1].to(device)
+        if batch_num % 200:
+            print(f'batch_num {batch_num}')
+        output = model(input.cuda())
+        loss = criterion(output, target.cuda())
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        train_loss += loss.item()
+        psnr.append(piq.psnr(output, target.cuda(), data_range=255., reduction='mean'))
+        ssim.append(piq.ssim(output, target.cuda(), data_range=255.))
+        # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
+        torch.cuda.empty_cache()
+    train_loss /= len(train_loader.dataset)
+    psnr_avg= sum(psnr)/len(train_loader.dataset)
+    ssim_avg= sum(ssim)/len(train_loader.dataset)
+    # lpips_avg= sum(lpips)/len(train_loader.dataset)
+    psnr_max = max(psnr)
+    ssim_max = max(ssim)
+    # lpips_max = max(lpips)
+    val_loss = 0
+    model.eval()
+    with torch.no_grad():
+        for input, target in val_loader:
+            output = model(input.cuda())
+            loss = criterion(output, target.cuda())
+            psnr_test.append(piq.psnr(output, target.cuda(), data_range=255., reduction='mean'))
+            ssim_test.append(piq.ssim(output, target.cuda(), data_range=255.))
+            # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
+            val_loss += loss.item()
+
+    val_loss /= len(val_loader.dataset)
+    psnr_test_avg = sum(psnr_test)/len(val_loader.dataset)
+    ssim_test_avg = sum(ssim_test)/len(val_loader.dataset)
+    # lpips_test_avg = sum(lpips_test)/len(val_loader.dataset)
+    psnr_test_max = max(psnr_test)
+    ssim_test_max = max(ssim_test)
+    # lpips_test_max = max(lpips_test)
+
+    print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
+        epoch+1, train_loss, val_loss, time.time()-st))
+    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)} and Test PSNR avg {round(psnr_test_avg, 2)}, test PSNR max {round(psnr_test_max,2)}')
+    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)} and Test SSIM avg {round(ssim_test_avg,2)}, test SSIM max {round(ssim_test_max,2)}')
+
+    if ssim_max > ssim_best:
+
+        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable num_channels={all_lr_data[0].shape[0]} num_kernels={all_lr_data[0].shape[1]//2},' \
+                 f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
+                 f'frame_size={(all_lr_data[0].shape[1],all_lr_data[0].shape[2])}, ' \
+                 f'scale={scale}  {name}'
+        PATH = f'mdu-vsr-customdataser-{params}.pth'
+        torch.save(model.state_dict(), PATH)
+        model.load_state_dict(torch.load(PATH))
 
 
 model.eval()
@@ -255,6 +336,4 @@ with torch.no_grad():
         for item in lpips_val:
             # write each item on a new line
             fp.write("%s\n" % item)
-
-
 
