@@ -1,6 +1,5 @@
 import os
 import time
-
 import torch
 from PIL import Image, ImageOps
 print(torch.__version__)
@@ -23,105 +22,43 @@ import argparse
 # Initialize parser
 parser = argparse.ArgumentParser()
 # Adding optional argument
-parser.add_argument("hr_data", type=str, help="HR Path")
-parser.add_argument("lr_data", type=str, help="LR Path")
 parser.add_argument("result", type=str, help="result Path (to save)")
 parser.add_argument("scale", type=int, help="downsampling scale")
 parser.add_argument("epochs", type=int, help="epochs")
 parser.add_argument("name", type=str, help="model name")
+parser.add_argument("batch_size", type=str, help="batch size")
+parser.add_argument("workers", type=int, help="workers")
 # Read arguments from command line
 args = parser.parse_args()
 
-
-hr_path = args.hr_data
-lr_path = args.lr_data
 res_path = args.result
 scale = args.scale
 epochs = args.epochs
 name = args.name
+batch_size = args.batch_size
+workers = args.workers
 
 # Use GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+train_data = torch.load('train_data.pt', map_location=torch.device('cuda'))
+val_data = torch.load('val_data.pt', map_location=torch.device('cuda'))
+test_data = torch.load('test_data.pt', map_location=torch.device('cuda'))
+
 # Load Data as Numpy Array
-def read_data(path):
-    data=[]
-    for dirname, _, filenames in os.walk(path):
-        for filename in filenames:
-            f = os.path.join(dirname, filename)
-            # print(f)
-            if filename.split('.')[-1] == 'jpg':
-                img = Image.open(f)
-                img.load()
-                img_array = np.asarray(img)
-                img_array = np.swapaxes(img_array, np.where(np.asarray(img_array.shape)==min(img_array.shape))[0][0], 0)
-                data.append(img_array)
-    return data
-
-
-all_hr_data = read_data(hr_path)
-all_lr_data = read_data(lr_path)
-#
-# for dirname, _, filenames in os.walk(lr_path):
-#     for filename in filenames:
-#         f = os.path.join(dirname, filename)
-#         # print(f)
-#         if filename.split('.')[-1] == 'jpg':
-#             img = Image.open(f)
-#             img.load()
-#             img_array = np.asarray(img)
-#             img_array = np.swapaxis(img_array,img_array.shape.min(),0)
-#             all_lr_data.append(img_array)
-
-print(all_lr_data[0].shape)
-print(all_hr_data[0].shape)
-# Train, Test, Validation splits
-train_data_hr = all_hr_data[:len(all_hr_data)//2]
-train_data_lr = all_lr_data[:len(all_lr_data)//2]
-
-val_data_hr = all_hr_data[len(all_hr_data)//2:(len(all_hr_data)//2)+(len(all_hr_data)//4)]
-val_data_lr = all_lr_data[len(all_lr_data)//2:(len(all_lr_data)//2)+(len(all_lr_data)//4)]
-
-test_data_hr = all_hr_data[(len(all_hr_data)//2)+(len(all_hr_data)//4):]
-test_data_lr = all_lr_data[(len(all_lr_data)//2)+(len(all_lr_data)//4):]
-
-print(f'hr shape {all_hr_data[0].shape}')
-print(f'lr shape {all_lr_data[0].shape}')
-
-
-class CustomDataset(Dataset):
-    def __init__(self, image_data, labels):
-        self.image_data = image_data
-        self.labels = labels
-
-    def __len__(self):
-        return (len(self.image_data))
-
-    def __getitem__(self, index):
-        image = self.image_data[index]
-        label = self.labels[index]
-        return (
-            torch.tensor(image, dtype=torch.float),
-            torch.tensor(label, dtype=torch.float)
-        )
-
-
-train_data = CustomDataset(np.asarray(train_data_lr),np.asarray(train_data_hr))
-val_data = CustomDataset(np.asarray(val_data_lr),np.asarray(val_data_hr))
-test_data = CustomDataset(np.asarray(test_data_lr),np.asarray(train_data_hr))
-
-train_loader = DataLoader(train_data, batch_size=16, shuffle=False, num_workers=2)
-val_loader = DataLoader(val_data, batch_size=16, shuffle=False, num_workers=2)
-test_loader = DataLoader(test_data, batch_size=16, shuffle=False, num_workers=2)
+train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=workers)
 
 """### Defining Model"""
 
 print('Computation device: ', device)
-model = mduvsr(num_channels=all_lr_data[0].shape[0], num_kernels=all_lr_data[0].shape[1]//2,
+model = mduvsr(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
                kernel_size=(3, 3), padding=(1, 1), activation="relu",
-               frame_size=(all_lr_data[0].shape[1],all_lr_data[0].shape[2]), num_layers=3, scale=scale).to(device)
+               frame_size=(train_loader.dataset[0][0].shape[1],train_loader.dataset[0][0].shape[2]), num_layers=3, scale=scale).to(device)
 
 print(model)
-print(summary(model, (all_lr_data[0].shape)))
+print(summary(model, (train_loader.dataset[0][0].shape)))
 """### Loss Function"""
 
 
@@ -297,9 +234,8 @@ for epoch in range(num_epochs//2):
 
         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable num_channels={all_lr_data[0].shape[0]} num_kernels={all_lr_data[0].shape[1]//2},' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
-                 f'frame_size={(all_lr_data[0].shape[1],all_lr_data[0].shape[2])}, ' \
                  f'scale={scale}  {name}'
-        PATH = f'mdu-vsr-customdataser-{params}.pth'
+        PATH = f'mdu-vsr-customdataset-{params}.pth'
         torch.save(model.state_dict(), PATH)
         model.load_state_dict(torch.load(PATH))
 
@@ -337,6 +273,3 @@ with torch.no_grad():
         for item in lpips_val:
             # write each item on a new line
             fp.write("%s\n" % item)
-
-
-
