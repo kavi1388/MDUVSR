@@ -33,22 +33,6 @@ scale = args.scale
 epochs = args.epochs
 name = args.name
 
-class CustomDataset(Dataset):
-    def __init__(self, image_data, labels):
-        self.image_data = image_data
-        self.labels = labels
-
-    def __len__(self):
-        return (len(self.image_data))
-
-    def __getitem__(self, index):
-        image = self.image_data[index]
-        label = self.labels[index]
-        return (
-            torch.tensor(image, dtype=torch.float),
-            torch.tensor(label, dtype=torch.float)
-        )
-# Use GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class CustomDataset(Dataset):
@@ -149,8 +133,7 @@ for epoch in range(num_epochs//2):
     st = time.time()
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1]
-        if batch_num % 200 ==0:
-            print(f'batch_num {batch_num}')
+
         output = model(input.cuda())
         loss = criterion(output, target.cuda())
         loss.backward()
@@ -159,6 +142,8 @@ for epoch in range(num_epochs//2):
         train_loss += loss.item()
         psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
         ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
+        if batch_num % 50 ==0:
+            print(f'batch_num {batch_num} ssim {ssim[-1]} and PSNR {psnr[-1]}')
         # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
@@ -205,8 +190,6 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 for epoch in range(num_epochs//2):
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1]
-        if batch_num % 50:
-            print(f'batch_num {batch_num}')
         output = model(input.cuda())
         loss = criterion(output, target.cuda())
         loss.backward()
@@ -215,7 +198,8 @@ for epoch in range(num_epochs//2):
         train_loss += loss.item()
         psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
         ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
-        # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
+        if batch_num % 50 ==0:
+            print(f'batch_num {batch_num} ssim {ssim[-1]} and PSNR {psnr[-1]}')
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
     psnr_avg= sum(psnr)/len(train_loader.dataset)
