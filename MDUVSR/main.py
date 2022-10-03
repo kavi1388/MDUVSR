@@ -140,15 +140,16 @@ for epoch in range(num_epochs//2):
         optimizer.step()
         optimizer.zero_grad()
         train_loss += loss.item()
-        psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
-        ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
+        if batch_num > 625 ==0:
+            psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
+            ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
         if batch_num % 50 ==0:
-            print(f'batch_num {batch_num} ssim {ssim[-1]} and PSNR {psnr[-1]}')
+            print(f'batch_num {batch_num}')
         # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
-    psnr_avg= sum(psnr)/len(train_loader.dataset)
-    ssim_avg= sum(ssim)/len(train_loader.dataset)
+    psnr_avg= sum(psnr)/len(psnr)
+    ssim_avg= sum(ssim)/len(ssim)
     # lpips_avg= sum(lpips)/len(train_loader.dataset)
     psnr_max = max(psnr)
     ssim_max = max(ssim)
@@ -159,23 +160,15 @@ for epoch in range(num_epochs//2):
         for input, target in val_loader:
             output = model(input.cuda())
             loss = criterion(output, target.cuda())
-            psnr_test.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
-            ssim_test.append(piq.ssim(output.cpu(), target, data_range=255.))
             # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
 
     val_loss /= len(val_loader.dataset)
-    psnr_test_avg = sum(psnr_test)/len(val_loader.dataset)
-    ssim_test_avg = sum(ssim_test)/len(val_loader.dataset)
-    # lpips_test_avg = sum(lpips_test)/len(val_loader.dataset)
-    psnr_test_max = max(psnr_test)
-    ssim_test_max = max(ssim_test)
-    # lpips_test_max = max(lpips_test)
 
     print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
         epoch+1, train_loss, val_loss, time.time()-st))
-    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)} and Test PSNR avg {round(psnr_test_avg, 2)}, test PSNR max {round(psnr_test_max,2)}')
-    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)} and Test SSIM avg {round(ssim_test_avg,2)}, test SSIM max {round(ssim_test_max,2)}')
+    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)} ')
+    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)} ')
 
     if ssim_max > ssim_best:
 
@@ -196,14 +189,15 @@ for epoch in range(num_epochs//2):
         optimizer.step()
         optimizer.zero_grad()
         train_loss += loss.item()
-        psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
-        ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
+        if batch_num > 625 ==0:
+            psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
+            ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
         if batch_num % 50 ==0:
-            print(f'batch_num {batch_num} ssim {ssim[-1]} and PSNR {psnr[-1]}')
+            print(f'batch_num {batch_num}')
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
-    psnr_avg= sum(psnr)/len(train_loader.dataset)
-    ssim_avg= sum(ssim)/len(train_loader.dataset)
+    psnr_avg= sum(psnr)/len(psnr)
+    ssim_avg= sum(ssim)/len(ssim)
     # lpips_avg= sum(lpips)/len(train_loader.dataset)
     psnr_max = max(psnr)
     ssim_max = max(ssim)
@@ -217,23 +211,14 @@ for epoch in range(num_epochs//2):
             plt.imshow(res)
             plt.savefig(f"{res_path}/epoch_{epoch}.png", bbox_inches="tight", pad_inches=0.0)
             loss = criterion(output, target.cuda())
-            psnr_test.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
-            ssim_test.append(piq.ssim(output.cpu(), target, data_range=255.))
-            # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
 
     val_loss /= len(val_loader.dataset)
-    psnr_test_avg = sum(psnr_test)/len(val_loader.dataset)
-    ssim_test_avg = sum(ssim_test)/len(val_loader.dataset)
-    # lpips_test_avg = sum(lpips_test)/len(val_loader.dataset)
-    psnr_test_max = max(psnr_test)
-    ssim_test_max = max(ssim_test)
-    # lpips_test_max = max(lpips_test)
 
     print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
         epoch+num_epochs//2, train_loss, val_loss, time.time()-st))
-    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)} and Test PSNR avg {round(psnr_test_avg, 2)}, test PSNR max {round(psnr_test_max,2)}')
-    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)} and Test SSIM avg {round(ssim_test_avg,2)}, test SSIM max {round(ssim_test_max,2)}')
+    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)}')
+    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)}')
 
     if ssim_max > ssim_best:
 
