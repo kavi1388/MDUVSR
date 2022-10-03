@@ -4,7 +4,6 @@ import torch
 from PIL import Image, ImageOps
 print(torch.__version__)
 import piq
-"""### ConvLSTM """
 from model import *
 import torch
 import torch.nn as nn
@@ -26,8 +25,6 @@ parser.add_argument("result", type=str, help="result Path (to save)")
 parser.add_argument("scale", type=int, help="downsampling scale")
 parser.add_argument("epochs", type=int, help="epochs")
 parser.add_argument("name", type=str, help="model name")
-parser.add_argument("batch_size", type=str, help="batch size")
-parser.add_argument("workers", type=int, help="workers")
 # Read arguments from command line
 args = parser.parse_args()
 
@@ -35,20 +32,42 @@ res_path = args.result
 scale = args.scale
 epochs = args.epochs
 name = args.name
-batch_size = args.batch_size
-workers = args.workers
 
+class CustomDataset(Dataset):
+    def __init__(self, image_data, labels):
+        self.image_data = image_data
+        self.labels = labels
+
+    def __len__(self):
+        return (len(self.image_data))
+
+    def __getitem__(self, index):
+        image = self.image_data[index]
+        label = self.labels[index]
+        return (
+            torch.tensor(image, dtype=torch.float),
+            torch.tensor(label, dtype=torch.float)
+        )
 # Use GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-train_data = torch.load('train_data.pt', map_location=torch.device('cuda'))
-val_data = torch.load('val_data.pt', map_location=torch.device('cuda'))
-test_data = torch.load('test_data.pt', map_location=torch.device('cuda'))
+class CustomDataset(Dataset):
+    def __init__(self, image_data, labels):
+        self.image_data = image_data
+        self.labels = labels
 
-# Load Data as Numpy Array
-train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=workers)
-val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=workers)
-test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+    def __len__(self):
+        return (len(self.image_data))
+
+    def __getitem__(self, index):
+        image = self.image_data[index]
+        label = self.labels[index]
+        return (
+            torch.tensor(image, dtype=torch.float),
+            torch.tensor(label, dtype=torch.float)
+        )
+train_loader = torch.load('train_loader.pt', map_location=torch.device('cuda'))
+val_loader = torch.load('val_loader.pt', map_location=torch.device('cuda'))
 
 """### Defining Model"""
 
@@ -175,11 +194,10 @@ for epoch in range(num_epochs//2):
 
     if ssim_max > ssim_best:
 
-        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable num_channels={all_lr_data[0].shape[0]} num_kernels={all_lr_data[0].shape[1]//2},' \
+        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
-                 f'frame_size={(all_lr_data[0].shape[1],all_lr_data[0].shape[2])}, ' \
                  f'scale={scale}  {name}'
-        PATH = f'mdu-vsr-customdataser-{params}.pth'
+        PATH = f'{res_path}\mdu-vsr-customdataser-{params}.pth'
         torch.save(model.state_dict(), PATH)
         model.load_state_dict(torch.load(PATH))
 
@@ -187,7 +205,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 for epoch in range(num_epochs//2):
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1]
-        if batch_num % 200:
+        if batch_num % 50:
             print(f'batch_num {batch_num}')
         output = model(input.cuda())
         loss = criterion(output, target.cuda())
@@ -211,6 +229,9 @@ for epoch in range(num_epochs//2):
     with torch.no_grad():
         for input, target in val_loader:
             output = model(input.cuda())
+            res = output[0].data.cpu().numpy()
+            plt.imshow(res)
+            plt.savefig(f"{res_path}/epoch_{epoch}.png", bbox_inches="tight", pad_inches=0.0)
             loss = criterion(output, target.cuda())
             psnr_test.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
             ssim_test.append(piq.ssim(output.cpu(), target, data_range=255.))
@@ -232,7 +253,7 @@ for epoch in range(num_epochs//2):
 
     if ssim_max > ssim_best:
 
-        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable num_channels={all_lr_data[0].shape[0]} num_kernels={all_lr_data[0].shape[1]//2},' \
+        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable ' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
                  f'scale={scale}  {name}'
         PATH = f'mdu-vsr-customdataset-{params}.pth'
@@ -241,35 +262,39 @@ for epoch in range(num_epochs//2):
 
 
 
-model.eval()
-ssim_val = []
-psnr_val = []
-lpips_val = []
-running_psnr = 0
+# test_loader = torch.load('test_loader.pt', map_location=torch.device('cuda'))
+# model.eval()
+# ssim_val = []
+# psnr_val = []
+# lpips_val = []
+# running_psnr = 0
+#
+# with torch.no_grad():
+#     for input, target in test_loader:
+#         output = model(input.cuda())
+#         psnr_val.append(piq.psnr(output, target.cuda(), data_range=255., reduction='mean'))
+#         ssim_val.append(piq.ssim(output, target.cuda(), data_range=255.))
+#         lpips_val.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
+#
+#         print(f'psnr value ={psnr_val[-1]}')
+#         print(f'ssim value ={ssim_val[-1]}')
+#         print(f'lpips value ={lpips_val[-1]}')
+#
+#     with open(r'name_quality metrics', 'w') as fp:
+#         fp.write("\n PSNR")
+#         for item in psnr_val:
+#             # write each item on a new line
+#             fp.write("%s\n" % item)
+#
+#         fp.write("\n SSIM")
+#         for item in ssim_val:
+#             # write each item on a new line
+#             fp.write("%s\n" % item)
+#
+#         fp.write("\n LPIPS")
+#         for item in lpips_val:
+#             # write each item on a new line
+#             fp.write("%s\n" % item)
 
-with torch.no_grad():
-    for input, target in test_loader:
-        output = model(input.cuda())
-        psnr_val.append(piq.psnr(output, target.cuda(), data_range=255., reduction='mean'))
-        ssim_val.append(piq.ssim(output, target.cuda(), data_range=255.))
-        lpips_val.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
 
-        print(f'psnr value ={psnr_val[-1]}')
-        print(f'ssim value ={ssim_val[-1]}')
-        print(f'lpips value ={lpips_val[-1]}')
 
-    with open(r'name_quality metrics', 'w') as fp:
-        fp.write("\n PSNR")
-        for item in psnr_val:
-            # write each item on a new line
-            fp.write("%s\n" % item)
-
-        fp.write("\n SSIM")
-        for item in ssim_val:
-            # write each item on a new line
-            fp.write("%s\n" % item)
-
-        fp.write("\n LPIPS")
-        for item in lpips_val:
-            # write each item on a new line
-            fp.write("%s\n" % item)
