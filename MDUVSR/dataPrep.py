@@ -12,12 +12,18 @@ parser = argparse.ArgumentParser()
 # Adding optional argument
 parser.add_argument("hr_data", type=str, help="HR Path")
 parser.add_argument("lr_data", type=str, help="LR Path")
+parser.add_argument("batch_size", type=int, help="batch size")
+parser.add_argument("workers", type=int, help="workers")
+
 
 # Read arguments from command line
 args = parser.parse_args()
 
 hr_path = args.hr_data
 lr_path = args.lr_data
+batch_size = args.batch_size
+workers = args.workers
+
 
 # Use GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -71,9 +77,14 @@ def data_load(all_lr_data,all_hr_data):
     val_data = CustomDataset(np.asarray(val_data_lr),np.asarray(val_data_hr))
     test_data = CustomDataset(np.asarray(test_data_lr),np.asarray(test_data_hr))
 
-    torch.save(train_data, 'train_data.pt')
-    torch.save(train_data, 'val_data.pt')
-    torch.save(test_data, 'test_data.pt')
+    # Load Data as Numpy Array
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+
+    torch.save(train_loader, 'train_loader.pt', pickle_protocol=4)
+    torch.save(val_loader, 'val_loader.pt', pickle_protocol=4)
+    torch.save(test_loader, 'test_loader.pt', pickle_protocol=4)
 
 
 all_hr_data = read_data(hr_path)
