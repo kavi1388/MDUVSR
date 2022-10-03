@@ -66,8 +66,8 @@ class CustomDataset(Dataset):
             torch.tensor(image, dtype=torch.float),
             torch.tensor(label, dtype=torch.float)
         )
-train_loader = torch.load('train_loader.pt', map_location=torch.device('cuda'))
-val_loader = torch.load('val_loader.pt', map_location=torch.device('cuda'))
+train_loader = torch.load('train_loader.pt', map_location=torch.device('cpu'))
+val_loader = torch.load('val_loader.pt', map_location=torch.device('cpu'))
 
 """### Defining Model"""
 
