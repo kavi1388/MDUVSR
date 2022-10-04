@@ -148,8 +148,9 @@ for epoch in range(num_epochs//2):
         # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
-    psnr_avg= sum(psnr)/len(psnr)
-    ssim_avg= sum(ssim)/len(ssim)
+    if len(psnr)>0:
+        psnr_avg= sum(psnr)/len(psnr)
+        ssim_avg= sum(ssim)/len(ssim)
     # lpips_avg= sum(lpips)/len(train_loader.dataset)
     psnr_max = max(psnr)
     ssim_max = max(ssim)
@@ -196,8 +197,9 @@ for epoch in range(num_epochs//2):
             print(f'batch_num {batch_num}')
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
-    psnr_avg= sum(psnr)/len(psnr)
-    ssim_avg= sum(ssim)/len(ssim)
+    if len(psnr)>0:
+        psnr_avg= sum(psnr)/len(psnr)
+        ssim_avg= sum(ssim)/len(ssim)
     # lpips_avg= sum(lpips)/len(train_loader.dataset)
     psnr_max = max(psnr)
     ssim_max = max(ssim)
