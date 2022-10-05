@@ -10,6 +10,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 from torchsummary import summary
+from dataPrep import *
 
 """### Preparing Data"""
 import numpy as np
@@ -18,42 +19,112 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import argparse
 
+# +
 # Initialize parser
 parser = argparse.ArgumentParser()
 # Adding optional argument
+
+parser.add_argument("hr_data", type=str, help="HR Path")
+parser.add_argument("lr_data", type=str, help="LR Path")
+parser.add_argument("batch_size", type=int, help="batch size")
+parser.add_argument("workers", type=int, help="workers")
 parser.add_argument("result", type=str, help="result Path (to save)")
 parser.add_argument("scale", type=int, help="downsampling scale")
 parser.add_argument("epochs", type=int, help="epochs")
 parser.add_argument("name", type=str, help="model name")
 # Read arguments from command line
 args = parser.parse_args()
+# -
 
 res_path = args.result
 scale = args.scale
 epochs = args.epochs
 name = args.name
+hr_path = args.hr_data
+lr_path = args.lr_data
+batch_size = args.batch_size
+workers = args.workers
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-class CustomDataset(Dataset):
-    def __init__(self, image_data, labels):
-        self.image_data = image_data
-        self.labels = labels
+# +
+# class CustomDataset(Dataset):
+#     def __init__(self, image_data, labels):
+#         self.image_data = image_data
+#         self.labels = labels
 
-    def __len__(self):
-        return (len(self.image_data))
+#     def __len__(self):
+#         return (len(self.image_data))
 
-    def __getitem__(self, index):
-        image = self.image_data[index]
-        label = self.labels[index]
-        return (
-            torch.tensor(image, dtype=torch.float),
-            torch.tensor(label, dtype=torch.float)
-        )
-train_loader = torch.load('train_loader.pt', map_location=torch.device('cpu'))
-val_loader = torch.load('val_loader.pt', map_location=torch.device('cpu'))
+#     def __getitem__(self, index):
+#         image = self.image_data[index]
+#         label = self.labels[index]
+#         return (
+#             torch.tensor(image, dtype=torch.float),
+#             torch.tensor(label, dtype=torch.float)
+#         )
+# train_loader = torch.load('train_loader.pt', map_location=torch.device('cpu'))
+# val_loader = torch.load('val_loader.pt', map_location=torch.device('cpu'))
+# -
 
-"""### Defining Model"""
+all_hr_data = read_data(hr_path)
+all_lr_data = read_data(lr_path)
+print('read')
+data_load(all_lr_data,all_hr_data)
+print('loaded')
+
+# ### Defining Model
+
+
+
+# +
+# # !pip install patchify
+
+# +
+# import numpy as np
+# from patchify import patchify, unpatchify
+
+# +
+# image = train_loader.dataset[1][0]
+
+# +
+# 180//4
+
+# +
+# image.numpy().shape
+
+# +
+# image.numpy()
+
+# +
+# image.numpy().T.shape
+
+# +
+# with np.printoptions(threshold=np.inf):
+#     print(image.numpy())
+
+# +
+# patches=patchify(image.numpy(), (3,80,45), step=(40))
+
+# +
+# patches.shape
+
+# +
+# image = np.random.rand(15,20,3)
+
+# patches = patchify(image, (3,4,3), step=4) # patch shape [2,2,3]
+
+# +
+# image
+
+# +
+# with np.printoptions(threshold=np.inf):
+#     for i in range(patches.shape[0]):
+#         for j in range(patches.shape[1]):
+#             print(i,j)
+#             patch = patches[i, j]
+#             print(patch)
+# -
 
 print('Computation device: ', device)
 model = mduvsr(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
@@ -140,10 +211,9 @@ for epoch in range(num_epochs//2):
         optimizer.step()
         optimizer.zero_grad()
         train_loss += loss.item()
-        if batch_num > 625 ==0:
+        if batch_num % 100 ==0 :
             psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
             ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
-        if batch_num % 50 ==0:
             print(f'batch_num {batch_num}')
         # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
         torch.cuda.empty_cache()
@@ -190,10 +260,9 @@ for epoch in range(num_epochs//2):
         optimizer.step()
         optimizer.zero_grad()
         train_loss += loss.item()
-        if batch_num > 625 ==0:
+        if batch_num % 100 ==0 :
             psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
             ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
-        if batch_num % 50 ==0:
             print(f'batch_num {batch_num}')
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
