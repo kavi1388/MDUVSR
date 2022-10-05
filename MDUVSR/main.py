@@ -10,7 +10,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 from torchsummary import summary
-from dataPrep import *
+from dataPrep import read_data, data_load
 
 """### Preparing Data"""
 import numpy as np

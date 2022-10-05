@@ -22,16 +22,16 @@ parser.add_argument("workers", type=int, help="workers")
 
 
 # Read arguments from command line
-args = parser.parse_args()
-
-# +
-hr_path = args.hr_data
-lr_path = args.lr_data
-
-res_hr_patches = args.res_hr_patches
-res_lr_patches = args.res_lr_patches
-batch_size = args.batch_size
-workers = args.workers
+# args = parser.parse_args()
+#
+# # +
+# hr_path = args.hr_data
+# lr_path = args.lr_data
+#
+# res_hr_patches = args.res_hr_patches
+# res_lr_patches = args.res_lr_patches
+# batch_size = args.batch_size
+# workers = args.workers
 
 # hr_path = r'Custom Dataset/frames/hr'
 # lr_path = r'Custom Dataset/frames/lr'
@@ -148,8 +148,8 @@ def data_load(all_lr_data,all_hr_data):
     return train_loader, val_loader, test_loader
 # -
 
-all_hr_data = read_data(hr_path)
-all_lr_data = read_data(lr_path)
-print('read')
-
-data_load(all_lr_data,all_hr_data)
+# all_hr_data = read_data(hr_path)
+# all_lr_data = read_data(lr_path)
+# print('read')
+#
+# data_load(all_lr_data,all_hr_data)
