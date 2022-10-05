@@ -145,7 +145,7 @@ def data_load(all_lr_data,all_hr_data):
 #     torch.save(val_loader, 'val_loader.pt', pickle_protocol=4)
 #     torch.save(test_loader, 'test_loader.pt', pickle_protocol=4)
 
-
+    return train_loader, val_loader, test_loader
 # -
 
 all_hr_data = read_data(hr_path)

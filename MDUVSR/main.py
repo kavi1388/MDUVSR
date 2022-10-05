@@ -70,7 +70,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 all_hr_data = read_data(hr_path)
 all_lr_data = read_data(lr_path)
 print('read')
-data_load(all_lr_data,all_hr_data)
+train_loader, val_loader, test_loader = data_load(all_lr_data,all_hr_data)
 print('loaded')
 
 # ### Defining Model
