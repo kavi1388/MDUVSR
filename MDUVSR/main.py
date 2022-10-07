@@ -70,7 +70,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 all_hr_data = read_data(hr_path)
 all_lr_data = read_data(lr_path)
 print('read')
-train_loader, val_loader, test_loader = data_load(all_lr_data,all_hr_data)
+train_loader, val_loader = data_load(all_lr_data,all_hr_data, batch_size, workers)
 print('loaded')
 
 # ### Defining Model
@@ -192,14 +192,10 @@ num_epochs = epochs
 
 # model.to(device)
 for epoch in range(num_epochs//2):
-    psnr = []
-    ssim = []
-    lpips = []
+    c=0
     train_loss = 0
     ssim_best = 0
-    psnr_test = []
-    ssim_test = []
-    lpips_test = []
+    psnr, ssim =0, 0
     model.train()
     st = time.time()
     for batch_num, data in enumerate(train_loader, 0):
@@ -212,19 +208,16 @@ for epoch in range(num_epochs//2):
         optimizer.zero_grad()
         train_loss += loss.item()
         if batch_num % 100 ==0 :
-            psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
-            ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
-            print(f'batch_num {batch_num}')
+            c+=1
+            psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
+            ssim += piq.ssim(output.cpu(), target, data_range=255.)
+            # print(f'batch_num {batch_num}')
         # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
-    if len(psnr)>0:
-        psnr_avg= sum(psnr)/len(psnr)
-        ssim_avg= sum(ssim)/len(ssim)
-    # lpips_avg= sum(lpips)/len(train_loader.dataset)
-    psnr_max = max(psnr)
-    ssim_max = max(ssim)
-    # lpips_max = max(lpips)
+    psnr_avg= psnr/c
+    ssim_avg= ssim/c
+
     val_loss = 0
     model.eval()
     with torch.no_grad():
@@ -238,10 +231,10 @@ for epoch in range(num_epochs//2):
 
     print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
         epoch+1, train_loss, val_loss, time.time()-st))
-    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)} ')
-    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)} ')
+    print(f'Train PSNR avg {psnr_avg}')
+    print(f'Train SSIM avg {ssim_avg}')
 
-    if ssim_max > ssim_best:
+    if ssim_avg > ssim_best:
 
         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
@@ -252,6 +245,7 @@ for epoch in range(num_epochs//2):
 
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 for epoch in range(num_epochs//2):
+    c=0
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1]
         output = model(input.cuda())
@@ -261,24 +255,22 @@ for epoch in range(num_epochs//2):
         optimizer.zero_grad()
         train_loss += loss.item()
         if batch_num % 100 ==0 :
-            psnr.append(piq.psnr(output.cpu(), target, data_range=255., reduction='mean'))
-            ssim.append(piq.ssim(output.cpu(), target, data_range=255.))
-            print(f'batch_num {batch_num}')
+            c += 1
+            psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
+            ssim += piq.ssim(output.cpu(), target, data_range=255.)
+            # print(f'batch_num {batch_num}')
         torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
-    if len(psnr)>0:
-        psnr_avg= sum(psnr)/len(psnr)
-        ssim_avg= sum(ssim)/len(ssim)
-    # lpips_avg= sum(lpips)/len(train_loader.dataset)
-    psnr_max = max(psnr)
-    ssim_max = max(ssim)
-    # lpips_max = max(lpips)
+
+    psnr_avg= psnr/c
+    ssim_avg= ssim/c
+
     val_loss = 0
     model.eval()
     with torch.no_grad():
         for input, target in val_loader:
             output = model(input.cuda())
-            res = output[0].data.cpu().numpy()
+            res = output.cpu()[-1][0].detach().numpy()
             plt.imshow(res)
             plt.savefig(f"{res_path}/epoch_{epoch}.png", bbox_inches="tight", pad_inches=0.0)
             loss = criterion(output, target.cuda())
@@ -288,10 +280,10 @@ for epoch in range(num_epochs//2):
 
     print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
         epoch+num_epochs//2, train_loss, val_loss, time.time()-st))
-    print(f'Train PSNR avg {round(psnr_avg, 2)}, PSNR max {round(psnr_max,2)}')
-    print(f'Train SSIM avg {round(ssim_avg,2)} , SSIM max {round(ssim_max,2)}')
+    print(f'Train PSNR avg {psnr_avg}, PSNR max {psnr_max}')
+    print(f'Train SSIM avg {ssim_avg} , SSIM max {ssim_max}')
 
-    if ssim_max > ssim_best:
+    if ssim > ssim_best:
 
         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable ' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \

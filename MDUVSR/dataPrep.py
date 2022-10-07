@@ -48,24 +48,25 @@ def read_data(path):
     patch = []
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
-            f = os.path.join(dirname, filename)
-#             print(f)
-            if filename.split('.')[-1] == 'jpg':
-                img = Image.open(f)
-                img.load()
-                img_array = np.asarray(img)
-                img_array = np.swapaxes(img_array, np.where(np.asarray(img_array.shape) == min(img_array.shape))[0][0], 0)
-                # data.append(img_array)
-                patches = patchify(img_array, (3, img_array.shape[1] // 4, img_array.shape[2] // 4), step=(img_array.shape[1] // 8))
-#                 print(patches.shape)
-                for i in range(patches.shape[0]):
-                    for j in range(patches.shape[1]):
-                        for k in range(patches.shape[2]):
-                            patch = patches[i, j, k]
-                            data.append(patch)
-#                             patch = Image.fromarray(patch.T)
-#                             num = i * patches.shape[1] + j
-#                             patch.save(f"{respath}/{filename.split('.')[0]}_patch_{num}.jpg")
+            if len(data)<1200000:
+                f = os.path.join(dirname, filename)
+    #             print(f)
+                if filename.split('.')[-1] == 'jpg':
+                    img = Image.open(f)
+                    img.load()
+                    img_array = np.asarray(img)
+                    img_array = np.swapaxes(img_array, np.where(np.asarray(img_array.shape) == min(img_array.shape))[0][0], 0)
+                    # data.append(img_array)
+                    patches = patchify(img_array, (3, img_array.shape[1] // 4, img_array.shape[2] // 4), step=(img_array.shape[1] // 8))
+    #                 print(patches.shape)
+                    for i in range(patches.shape[0]):
+                        for j in range(patches.shape[1]):
+                            for k in range(patches.shape[2]):
+                                patch = patches[i, j, k]
+                                data.append(patch)
+    #                             patch = Image.fromarray(patch.T)
+    #                             num = i * patches.shape[1] + j
+    #                             patch.save(f"{respath}/{filename.split('.')[0]}_patch_{num}.jpg")
     return data
 
 # +
@@ -113,7 +114,7 @@ class CustomDataset(Dataset):
         )
 
 # +
-def data_load(all_lr_data,all_hr_data):
+def data_load(all_lr_data,all_hr_data, batch_size, workers):
 
     # Train, Test, Validation splits
     train_data_hr = all_hr_data[:len(all_hr_data)//3]
@@ -122,30 +123,30 @@ def data_load(all_lr_data,all_hr_data):
     val_data_hr = all_hr_data[len(all_hr_data)//3:(len(all_hr_data)//3)+(len(all_hr_data)//4)]
     val_data_lr = all_lr_data[len(all_lr_data)//3:(len(all_lr_data)//3)+(len(all_lr_data)//4)]
 
-    test_data_hr = all_hr_data[(len(all_hr_data)//3)+(len(all_hr_data)//4):(len(all_hr_data)//3)+(len(all_hr_data)//2)]
-    test_data_lr = all_lr_data[(len(all_lr_data)//3)+(len(all_lr_data)//4):(len(all_lr_data)//3)+(len(all_lr_data)//2)]
+    # test_data_hr = all_hr_data[(len(all_hr_data)//3)+(len(all_hr_data)//4):(len(all_hr_data)//3)+(len(all_hr_data)//2)]
+    # test_data_lr = all_lr_data[(len(all_lr_data)//3)+(len(all_lr_data)//4):(len(all_lr_data)//3)+(len(all_lr_data)//2)]
 
     print(f'hr {len(all_hr_data)}')
     print(f'lr {len(all_lr_data)}')
 
     train_data = CustomDataset(np.asarray(train_data_lr),np.asarray(train_data_hr))
     val_data = CustomDataset(np.asarray(val_data_lr),np.asarray(val_data_hr))
-    test_data = CustomDataset(np.asarray(test_data_lr),np.asarray(test_data_hr))
+    # test_data = CustomDataset(np.asarray(test_data_lr),np.asarray(test_data_hr))
 
     # Load Data as Numpy Array
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=workers)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=workers)
-    test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+    # test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=workers)
     
     print(f'train {len(train_data_hr)}')    
     print(f'val {len(val_data_hr)}')
-    print(f'test {len(test_data_hr)}')
+    # print(f'test {len(test_data_hr)}')
 
 #     torch.save(train_loader, 'train_loader.pt', pickle_protocol=4)
 #     torch.save(val_loader, 'val_loader.pt', pickle_protocol=4)
 #     torch.save(test_loader, 'test_loader.pt', pickle_protocol=4)
 
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader
 # -
 
 # all_hr_data = read_data(hr_path)
