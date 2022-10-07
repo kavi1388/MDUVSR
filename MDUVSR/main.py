@@ -246,6 +246,7 @@ for epoch in range(num_epochs//2):
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 for epoch in range(num_epochs//2):
     c=0
+    st= time.time()
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1]
         output = model(input.cuda())

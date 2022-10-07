@@ -119,10 +119,12 @@ def data_load(all_lr_data,all_hr_data, batch_size, workers):
     # Train, Test, Validation splits
     train_data_hr = all_hr_data[:len(all_hr_data)//3]
     train_data_lr = all_lr_data[:len(all_lr_data)//3]
+    print(f'len of train hr data ={len(train_data_hr)}')
 
     val_data_hr = all_hr_data[len(all_hr_data)//3:(len(all_hr_data)//3)+(len(all_hr_data)//4)]
     val_data_lr = all_lr_data[len(all_lr_data)//3:(len(all_lr_data)//3)+(len(all_lr_data)//4)]
 
+    print(f'len of val hr data ={len(val_data_hr)}')
     # test_data_hr = all_hr_data[(len(all_hr_data)//3)+(len(all_hr_data)//4):(len(all_hr_data)//3)+(len(all_hr_data)//2)]
     # test_data_lr = all_lr_data[(len(all_lr_data)//3)+(len(all_lr_data)//4):(len(all_lr_data)//3)+(len(all_lr_data)//2)]
 
@@ -132,7 +134,7 @@ def data_load(all_lr_data,all_hr_data, batch_size, workers):
     train_data = CustomDataset(np.asarray(train_data_lr),np.asarray(train_data_hr))
     val_data = CustomDataset(np.asarray(val_data_lr),np.asarray(val_data_hr))
     # test_data = CustomDataset(np.asarray(test_data_lr),np.asarray(test_data_hr))
-
+    print(f'dataset created')
     # Load Data as Numpy Array
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=workers)
     val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=workers)
