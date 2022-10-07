@@ -7,8 +7,9 @@ from scipy.ndimage import gaussian_filter
 import argparse
 import cv2
 
+
 def downsample(img, scale):
-    img = gaussian_filter(img, sigma=1)
+    img = cv2.GaussianBlur(img, (0,0), 1, 1)   # func args = img, kernel_size, X_sigma, Y_sigma
 
     #     downsample_shape=(img.shape[0]//scale,img.shape[1]//scale,img.shape[2])
 

@@ -113,7 +113,7 @@ class CustomDataset(Dataset):
             torch.tensor(label, dtype=torch.float)
         )
 
-# +
+
 def data_load(all_lr_data,all_hr_data, batch_size, workers):
 
     # Train, Test, Validation splits

@@ -17,8 +17,7 @@ video_path = args.vid
 frame_path = args.save
 
 def video_to_frames(video_path, frame_path, filename):
-  # for dirname, _, filenames in os.walk(video_path):
-  #   for filename in filenames:
+
       f=os.path.join(video_path, filename)
       vidcap = cv2.VideoCapture(f)
       success,image = vidcap.read()
