@@ -280,8 +280,8 @@ for epoch in range(num_epochs//2):
 
     print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
         epoch+num_epochs//2, train_loss, val_loss, time.time()-st))
-    print(f'Train PSNR avg {psnr_avg}, PSNR max {psnr_max}')
-    print(f'Train SSIM avg {ssim_avg} , SSIM max {ssim_max}')
+    print(f'Train PSNR avg {psnr_avg}')
+    print(f'Train SSIM avg {ssim_avg} ')
 
     if ssim > ssim_best:
 
