@@ -235,7 +235,7 @@ for epoch in range(num_epochs//2):
     print(f'Train SSIM avg {ssim_avg}')
 
     if ssim_avg > ssim_best:
-
+        ssim_best = ssim_avg
         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
                  f'scale={scale}  {name}'
@@ -286,8 +286,8 @@ for epoch in range(num_epochs//2):
     print(f'Train PSNR avg {psnr_avg}')
     print(f'Train SSIM avg {ssim_avg} ')
 
-    if ssim > ssim_best:
-
+    if ssim_avg > ssim_best:
+        ssim_best = ssim_avg
         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable ' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
                  f'scale={scale}  {name}'
