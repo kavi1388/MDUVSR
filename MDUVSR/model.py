@@ -21,9 +21,9 @@ class mduvsr(nn.Module):
         self.deformable_convolution1 = DeformableConv2d(
             in_channels=num_kernels+num_channels,
             out_channels=num_kernels,
-            kernel_size=3,
+            kernel_size=kernel_size[0],
             stride=1,
-            padding=1,
+            padding=padding[0],
             bias=True)
 
         # Add rest of the layers
@@ -31,17 +31,17 @@ class mduvsr(nn.Module):
         self.deformable_convolution2 = DeformableConv2d(
             in_channels=num_kernels+num_channels,
             out_channels=num_kernels,
-            kernel_size=3,
+            kernel_size=kernel_size[0],
             stride=1,
-            padding=1,
+            padding=padding[0],
             bias=True)
 
         self.deformable_convolution3 = DeformableConv2d(
             in_channels=num_kernels+num_channels,
             out_channels=num_kernels,
-            kernel_size=3,
+            kernel_size=kernel_size[0],
             stride=1,
-            padding=1,
+            padding=padding[0],
             bias=True)
 
         # Add Convolutional Layer to predict output frame
@@ -49,10 +49,10 @@ class mduvsr(nn.Module):
             in_channels=num_kernels+num_channels, out_channels=num_channels,
             kernel_size=kernel_size, padding=padding)
 
-        self.ddfup1 = DDFUpPack(in_channels=num_channels, kernel_size=3,
+        self.ddfup1 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
                                 scale_factor=1, head=1, kernel_combine="add").cuda()
 
-        self.ddfup2 = DDFUpPack(in_channels=num_channels, kernel_size=3,
+        self.ddfup2 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
                                 scale_factor=scale, head=1, kernel_combine="add").cuda()
 
         self.batchnorm1 = nn.BatchNorm2d(num_features=num_kernels)
@@ -64,10 +64,8 @@ class mduvsr(nn.Module):
         output_convlstm = self.convlstm1(X,state)
         x = output_convlstm
         x = torch.cat((x[0],lr),1)
-        print(f'after convlstm {x.shape}')
         x = self.deformable_convolution1(x)
         x = torch.cat((x,lr),1)
-        print(f'after def {x.shape}')
         x = self.deformable_convolution2(x)
         x = torch.cat((x,lr),1)
         x = self.deformable_convolution3(x)

@@ -223,7 +223,7 @@ for epoch in range(num_epochs//2):
     model.eval()
     with torch.no_grad():
         for input, target in val_loader:
-            output = model(input.cuda())
+            output, _ = model(input.cuda())
             loss = criterion(output, target.cuda())
             # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
@@ -274,7 +274,7 @@ for epoch in range(num_epochs//2):
     model.eval()
     with torch.no_grad():
         for input, target in val_loader:
-            output = model(input.cuda())
+            output, _ = model(input.cuda())
             res = output.cpu()[-1][0].detach().numpy()
             plt.imshow(res)
             plt.savefig(f"{res_path}/epoch_{epoch}.png", bbox_inches="tight", pad_inches=0.0)
