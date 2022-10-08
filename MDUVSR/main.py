@@ -129,7 +129,7 @@ print('loaded')
 print('Computation device: ', device)
 
 model = mduvsr(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
-               kernel_size=(train_loader.dataset[0][0].shape[1],train_loader.dataset[0][0].shape[2]), padding=(1, 1), scale=scale).to(device)
+               kernel_size=(3,3), padding=(1, 1), scale=scale).to(device)
 
 print(model)
 print(summary(model, (train_loader.dataset[0][0].shape)))
@@ -198,8 +198,9 @@ for epoch in range(num_epochs//2):
     psnr, ssim =0, 0
     model.train()
 
+    st = time.time()
     for batch_num, data in enumerate(train_loader, 0):
-        st = time.time()
+
         input, target = data[0].to(device), data[1]
         state = model(input.cuda(), state[1])
         output = state[0]
