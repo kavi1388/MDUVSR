@@ -196,8 +196,9 @@ for epoch in range(num_epochs//2):
     ssim_best = 0
     psnr, ssim =0, 0
     model.train()
-    st = time.time()
+
     for batch_num, data in enumerate(train_loader, 0):
+        st = time.time()
         input, target = data[0].to(device), data[1]
         state = model(input.cuda(), state[1])
         output = state[0]
