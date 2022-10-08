@@ -5,6 +5,8 @@ from DefConv import *
 from ConvLSTM import *
 from ddf import DDFUpPack
 
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 class mduvsr(nn.Module):
 
     def __init__(self, num_channels, num_kernels, kernel_size, padding,

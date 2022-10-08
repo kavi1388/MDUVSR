@@ -189,8 +189,9 @@ criterion = CharbonnierLoss()
 num_epochs = epochs
 
 """### Training"""
-state = (None, None)
+
 for epoch in range(num_epochs//2):
+    state = (None, None)
     c=0
     train_loss = 0
     ssim_best = 0
@@ -246,6 +247,7 @@ for epoch in range(num_epochs//2):
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
 for epoch in range(num_epochs//2):
+    state = (None, None)
     c=0
     st= time.time()
     for batch_num, data in enumerate(train_loader, 0):
