@@ -127,9 +127,9 @@ print('loaded')
 # -
 
 print('Computation device: ', device)
+
 model = mduvsr(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
-               kernel_size=(3, 3), padding=(1, 1), activation="relu",
-               frame_size=(train_loader.dataset[0][0].shape[1],train_loader.dataset[0][0].shape[2]), num_layers=3, scale=scale).to(device)
+               kernel_size=(train_loader.dataset[0][0].shape[1],train_loader.dataset[0][0].shape[2]), padding=(1, 1), scale=scale).to(device)
 
 print(model)
 print(summary(model, (train_loader.dataset[0][0].shape)))
