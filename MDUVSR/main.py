@@ -189,8 +189,7 @@ criterion = CharbonnierLoss()
 num_epochs = epochs
 
 """### Training"""
-
-# model.to(device)
+state = (None, None)
 for epoch in range(num_epochs//2):
     c=0
     train_loss = 0
@@ -200,8 +199,8 @@ for epoch in range(num_epochs//2):
     st = time.time()
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1]
-
-        output = model(input.cuda())
+        state = model(input.cuda(), state[1])
+        output = state[0]
         loss = criterion(output, target.cuda())
         loss.backward()
         optimizer.step()
@@ -244,12 +243,14 @@ for epoch in range(num_epochs//2):
         model.load_state_dict(torch.load(PATH))
 
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+
 for epoch in range(num_epochs//2):
     c=0
     st= time.time()
     for batch_num, data in enumerate(train_loader, 0):
         input, target = data[0].to(device), data[1]
-        output = model(input.cuda())
+        state = model(input.cuda(), state[1])
+        output = state[0]
         loss = criterion(output, target.cuda())
         loss.backward()
         optimizer.step()
@@ -292,6 +293,8 @@ for epoch in range(num_epochs//2):
         PATH = f'mdu-vsr-customdataset-{params}.pth'
         torch.save(model.state_dict(), PATH)
         model.load_state_dict(torch.load(PATH))
+
+
 
 
 

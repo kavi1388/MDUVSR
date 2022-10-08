@@ -4,16 +4,16 @@ import torch.nn as nn
 from DefConv import *
 from ConvLSTM import *
 from ddf import DDFUpPack
+
 class mduvsr(nn.Module):
 
     def __init__(self, num_channels, num_kernels, kernel_size, padding,
-                 activation, frame_size, num_layers, scale):
+                 scale, state = None):
         super(mduvsr, self).__init__()
 
-        self.convlstm1 = ConvLSTM(
-            in_channels=num_channels, out_channels=num_kernels,
-            kernel_size=kernel_size, padding=padding,
-            activation=activation, frame_size=frame_size)
+        self.convlstm1 = ConvLSTMCell(
+            input_size=num_channels,  hidden_size =num_kernels,
+            kernel_size=kernel_size, padding=padding)
 
 
         self.deformable_convolution1 = DeformableConv2d(
@@ -55,14 +55,17 @@ class mduvsr(nn.Module):
 
         self.batchnorm1 = nn.BatchNorm2d(num_features=num_kernels)
 
-    def forward(self, X):
+    def forward(self, X, state=None):
         # Forward propagation through all the layers
-        lr = X
-        x = self.convlstm1(X)
 
-        x = torch.cat((x,lr),1)
+        lr = X
+        output_convlstm = self.convlstm1(X,state)
+        x = output_convlstm
+        x = torch.cat((x[0],lr),1)
+        print(f'after convlstm {x.shape}')
         x = self.deformable_convolution1(x)
         x = torch.cat((x,lr),1)
+        print(f'after def {x.shape}')
         x = self.deformable_convolution2(x)
         x = torch.cat((x,lr),1)
         x = self.deformable_convolution3(x)
@@ -72,4 +75,4 @@ class mduvsr(nn.Module):
 
         output = torch.clamp(output, 0, 255)
 
-        return output
+        return output, output_convlstm

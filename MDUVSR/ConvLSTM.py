@@ -1,95 +1,72 @@
-"""### ConvLSTM """
-
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
-import torchvision.ops
+from torch import nn
+import torch.nn.functional as f
+from torch.autograd import Variable
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Define some constants
+# KERNEL_SIZE = 3
+# PADDING = KERNEL_SIZE // 2
 
 
 class ConvLSTMCell(nn.Module):
+    """
+    Generate a convolutional LSTM cell
+    """
 
-    def __init__(self, in_channels, out_channels,
-                 kernel_size, padding, activation, frame_size):
+    def __init__(self, input_size, hidden_size, kernel_size, padding):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.Gates = nn.Conv2d(input_size + hidden_size, 4 * hidden_size, kernel_size, padding)
 
-        super(ConvLSTMCell, self).__init__()
+    def forward(self, input_, prev_state):
 
-        if activation == "tanh":
-            self.activation = torch.tanh
-        elif activation == "relu":
-            self.activation = torch.relu
+        print(f'input {input_}')
+        # get batch and spatial sizes
+        batch_size = input_.data.size()[0]
+        spatial_size = input_.data.size()[2:]
 
-        # Idea adapted from https://github.com/ndrplz/ConvLSTM_pytorch
-        self.conv = nn.Conv2d(
-            in_channels=in_channels + out_channels,
-            out_channels=4 * out_channels,
-            kernel_size=kernel_size,
-            padding=padding)
+        # generate empty prev_state, if None is provided
+        if prev_state is None:
+            state_size = [batch_size, self.hidden_size] + list(spatial_size)
+            prev_state = (
+                Variable(torch.zeros(state_size)),
+                Variable(torch.zeros(state_size))
+            )
+        print(f'prev_state {prev_state}')
+        prev_hidden, prev_cell = prev_state
 
-        # Initialize weights for Hadamard Products
-        self.W_ci = nn.Parameter(torch.Tensor(out_channels, *frame_size))
-        self.W_co = nn.Parameter(torch.Tensor(out_channels, *frame_size))
-        self.W_cf = nn.Parameter(torch.Tensor(out_channels, *frame_size))
-
-    def forward(self, X, H_prev, C_prev):
-
-        # Idea adapted from https://github.com/ndrplz/ConvLSTM_pytorch
-        conv_output = self.conv(torch.cat([X, H_prev], dim=1))
-
-        # Idea adapted from https://github.com/ndrplz/ConvLSTM_pytorch
-        i_conv, f_conv, C_conv, o_conv = torch.chunk(conv_output, chunks=4, dim=1)
-
-        input_gate = torch.sigmoid(i_conv + self.W_ci * C_prev)
-        forget_gate = torch.sigmoid(f_conv + self.W_cf * C_prev)
-
-        # Current Cell output
-        C = forget_gate * C_prev + input_gate * self.activation(C_conv)
-
-        output_gate = torch.sigmoid(o_conv + self.W_co * C)
-
-        # Current Hidden State
-        H = output_gate * self.activation(C)
-
-        return H, C
+        print(f'prev_hidden {prev_hidden.shape}')
+        print(f'prev_cell {prev_cell}')
+        print(f'input_ {input_.shape}')
 
 
-class ConvLSTM(nn.Module):
+        # data size is [batch, channel, height, width]
+        stacked_inputs = torch.cat((input_.to(device), prev_hidden.to(device)), 1)
+        gates = self.Gates(stacked_inputs)
 
-    def __init__(self, in_channels, out_channels,
-                 kernel_size, padding, activation, frame_size):
-        super(ConvLSTM, self).__init__()
+        # chunk across channel dimension
+        in_gate, remember_gate, out_gate, cell_gate = gates.chunk(4, 1)
 
-        self.out_channels = out_channels
+        # apply sigmoid non linearity
+        in_gate = f.sigmoid(in_gate)
+        remember_gate = f.sigmoid(remember_gate)
+        out_gate = f.sigmoid(out_gate)
 
-        # We will unroll this over time steps
-        self.convLSTMcell = ConvLSTMCell(in_channels, out_channels,
-                                         kernel_size, padding, activation, frame_size)
+        # apply tanh non linearity
+        cell_gate = torch.tanh(cell_gate)
 
-    def forward(self, X):
-        # X is a frame sequence (batch_size, num_channels, seq_len, height, width)
+        # compute current cell and hidden state
+        cell = (remember_gate.to(device) * prev_cell.to(device)) + (in_gate.to(device) * cell_gate.to(device))
+        hidden = out_gate.to(device) * torch.tanh(cell)
 
-        # Get the dimensions
-        X = X.reshape(X.shape[0], X.shape[1], 1, X.shape[2], X.shape[3])
-        batch_size, _, seq_len, height, width = X.size()
+        print(f'hidden {hidden}')
+        print(f'cell {cell}')
 
-        # Initialize output
-        output = torch.zeros(batch_size, self.out_channels, seq_len,
-                             height, width, device=device)
+        print(f'hidden {hidden.shape}')
+        print(f'cell {cell.shape}')
 
-        # Initialize Hidden State
-        H = torch.zeros(batch_size, self.out_channels,
-                        height, width, device=device)
+        return hidden, cell
 
-        # Initialize Cell Input
-        C = torch.zeros(batch_size, self.out_channels,
-                        height, width, device=device)
 
-        # Unroll over time steps
-        for time_step in range(seq_len):
-            H, C = self.convLSTMcell(X[:, :, time_step], H, C)
-
-            output = H
-            torch.cuda.empty_cache()
-        # print(output.shape)
-        return output
