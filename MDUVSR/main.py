@@ -204,7 +204,8 @@ for epoch in range(num_epochs//2):
         input, target = data[0].to(device), data[1]
         optimizer.zero_grad()
         state = model(input.cuda(), state[1])
-        state[1].detach_()
+        state[1][0].detach_()
+        state[1][1].detach_()
         output = state[0]
         with torch.cuda.amp.autocast():
             loss = criterion(output.cuda(), target.cuda())
@@ -262,7 +263,8 @@ for epoch in range(num_epochs//2):
         input, target = data[0].to(device), data[1]
         optimizer.zero_grad()
         state = model(input.cuda(), state[1])
-        state[1].detach_()
+        state[1][0].detach_()
+        state[1][1].detach_()
         output = state[0]
         with torch.cuda.amp.autocast():
             loss = criterion(output.cuda(), target.cuda())
