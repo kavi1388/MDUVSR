@@ -48,7 +48,7 @@ def read_data(path):
     patch = []
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
-            if len(data)<600000:
+            if len(data)<300000:
                 f = os.path.join(dirname, filename)
     #             print(f)
                 if filename.split('.')[-1] == 'jpg':

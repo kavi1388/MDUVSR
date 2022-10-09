@@ -198,16 +198,18 @@ for epoch in range(num_epochs//2):
     psnr, ssim =0, 0
     model.train()
 
-    st = time.time()
-    for batch_num, data in enumerate(train_loader, 0):
 
+    for batch_num, data in enumerate(train_loader, 0):
+        st = time.time()
         input, target = data[0].to(device), data[1]
+        optimizer.zero_grad()
         state = model(input.cuda(), state[1])
         output = state[0]
-        loss = criterion(output, target.cuda())
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
+        with torch.cuda.amp.autocast():
+            loss = criterion(output, target.cuda())
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         train_loss += loss.item()
         if batch_num % 100 ==0 :
             c+=1
@@ -249,16 +251,22 @@ optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
 for epoch in range(num_epochs//2):
     state = (None, None)
-    c=0
-    st= time.time()
+    c = 0
+    train_loss = 0
+    ssim_best = 0
+    psnr, ssim = 0, 0
+    model.train()
     for batch_num, data in enumerate(train_loader, 0):
+        st = time.time()
         input, target = data[0].to(device), data[1]
+        optimizer.zero_grad()
         state = model(input.cuda(), state[1])
         output = state[0]
-        loss = criterion(output, target.cuda())
-        loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
+        with torch.cuda.amp.autocast():
+            loss = criterion(output, target.cuda())
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         train_loss += loss.item()
         if batch_num % 100 ==0 :
             c += 1
@@ -335,6 +343,5 @@ for epoch in range(num_epochs//2):
 #         for item in lpips_val:
 #             # write each item on a new line
 #             fp.write("%s\n" % item)
-
 
 
