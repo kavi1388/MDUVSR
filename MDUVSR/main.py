@@ -198,9 +198,9 @@ for epoch in range(num_epochs//2):
     psnr, ssim =0, 0
     model.train()
 
-
+    st = time.time()
     for batch_num, data in enumerate(train_loader, 0):
-        st = time.time()
+
         input, target = data[0].to(device), data[1]
         optimizer.zero_grad()
         state = model(input.cuda(), state[1])
@@ -213,7 +213,7 @@ for epoch in range(num_epochs//2):
         scaler.step(optimizer)
         scaler.update()
         train_loss += loss.item()
-        if batch_num % 100 ==0 :
+        if batch_num % 5 ==0 :
             c+=1
             psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
             ssim += piq.ssim(output.cpu(), target, data_range=255.)
@@ -258,8 +258,9 @@ for epoch in range(num_epochs//2):
     ssim_best = 0
     psnr, ssim = 0, 0
     model.train()
+    st = time.time()
     for batch_num, data in enumerate(train_loader, 0):
-        st = time.time()
+
         input, target = data[0].to(device), data[1]
         optimizer.zero_grad()
         state = model(input.cuda(), state[1])
@@ -272,7 +273,7 @@ for epoch in range(num_epochs//2):
         scaler.step(optimizer)
         scaler.update()
         train_loss += loss.item()
-        if batch_num % 100 ==0 :
+        if batch_num % 5 ==0 :
             c += 1
             psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
             ssim += piq.ssim(output.cpu(), target, data_range=255.)
