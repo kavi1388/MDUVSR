@@ -206,7 +206,7 @@ for epoch in range(num_epochs//2):
         state = model(input.cuda(), state[1])
         output = state[0]
         with torch.cuda.amp.autocast():
-            loss = criterion(output, target.cuda())
+            loss = criterion(output.cuda(), target.cuda())
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
@@ -217,7 +217,7 @@ for epoch in range(num_epochs//2):
             ssim += piq.ssim(output.cpu(), target, data_range=255.)
             # print(f'batch_num {batch_num}')
         # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
     psnr_avg= psnr/c
     ssim_avg= ssim/c
@@ -227,7 +227,7 @@ for epoch in range(num_epochs//2):
     with torch.no_grad():
         for input, target in val_loader:
             output, _ = model(input.cuda())
-            loss = criterion(output, target.cuda())
+            loss = criterion(output.cuda(), target.cuda())
             # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
 
@@ -263,7 +263,7 @@ for epoch in range(num_epochs//2):
         state = model(input.cuda(), state[1])
         output = state[0]
         with torch.cuda.amp.autocast():
-            loss = criterion(output, target.cuda())
+            loss = criterion(output.cuda(), target.cuda())
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
@@ -273,7 +273,7 @@ for epoch in range(num_epochs//2):
             psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
             ssim += piq.ssim(output.cpu(), target, data_range=255.)
             # print(f'batch_num {batch_num}')
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
     train_loss /= len(train_loader.dataset)
 
     psnr_avg= psnr/c
@@ -287,7 +287,7 @@ for epoch in range(num_epochs//2):
             res = output.cpu()[-1][0].detach().numpy()
             plt.imshow(res)
             plt.savefig(f"{res_path}/epoch_{epoch}.png", bbox_inches="tight", pad_inches=0.0)
-            loss = criterion(output, target.cuda())
+            loss = criterion(output.cuda(), target.cuda())
             val_loss += loss.item()
 
     val_loss /= len(val_loader.dataset)
