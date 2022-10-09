@@ -27,6 +27,8 @@ class ConvLSTMCell(nn.Module):
         batch_size = input_.data.size()[0]
         spatial_size = input_.data.size()[2:]
 
+        print(input_.data.size())
+
         # generate empty prev_state, if None is provided
         if prev_state is None:
             state_size = [batch_size, self.hidden_size] + list(spatial_size)
