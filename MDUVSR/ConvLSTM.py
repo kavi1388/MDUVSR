@@ -36,8 +36,13 @@ class ConvLSTMCell(nn.Module):
                 Variable(torch.zeros(state_size)),
                 Variable(torch.zeros(state_size))
             )
-#         print(f'prev_state {prev_state}')
+
         prev_hidden, prev_cell = prev_state
+
+        if prev_state[0].size()[0] > batch_size:
+            prev_hidden = prev_state[0][len(prev_state[0])-batch_size:]
+            prev_cell = prev_state[1][len(prev_state[1])-batch_size:]
+#         print(f'prev_state {prev_state}')
 
         # data size is [batch, channel, height, width]
         stacked_inputs = torch.cat((input_.to(device), prev_hidden.to(device)), 1)
