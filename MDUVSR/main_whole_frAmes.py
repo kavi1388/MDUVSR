@@ -96,7 +96,7 @@ parser.add_argument("result", type=str, help="result Path (to save)")
 parser.add_argument("scale", type=int, help="downsampling scale")
 parser.add_argument("epochs", type=int, help="epochs")
 parser.add_argument("name", type=str, help="model name")
-parser.add_argument("data_size", type=str, help="data size")
+parser.add_argument("data_size", type=int, help="data size")
 # Read arguments from command line
 args = parser.parse_args()
 # -
