@@ -19,12 +19,12 @@ import matplotlib.pyplot as plt
 import argparse
 
 
-def read_data(path):
+def read_data(path, data_size):
     data = []
     patch = []
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
-            if len(data) < 300000:
+            if len(data) < data_size:
                 f = os.path.join(dirname, filename)
                 #             print(f)
                 if filename.split('.')[-1] == 'jpg':
@@ -87,7 +87,6 @@ def data_load(all_lr_data, all_hr_data, batch_size, workers):
 parser = argparse.ArgumentParser()
 # Adding optional argument
 
-
 parser.add_argument("model", type=str, help="model to use")
 parser.add_argument("hr_data", type=str, help="HR Path")
 parser.add_argument("lr_data", type=str, help="LR Path")
@@ -97,10 +96,11 @@ parser.add_argument("result", type=str, help="result Path (to save)")
 parser.add_argument("scale", type=int, help="downsampling scale")
 parser.add_argument("epochs", type=int, help="epochs")
 parser.add_argument("name", type=str, help="model name")
+parser.add_argument("data_size", type=str, help="data size")
 # Read arguments from command line
 args = parser.parse_args()
 # -
-
+data_size = args.data_size
 model_to_use = args.model
 res_path = args.result
 scale = args.scale
