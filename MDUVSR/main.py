@@ -267,7 +267,7 @@ for epoch in range(num_epochs//2):
         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
                  f'scale={scale}  {name}'
-        PATH = f'{res_path}\mdu-vsr-customdataser-{params}.pth'
+        PATH = f'{res_path}/mdu-vsr-customdataser-{params}.pth'
         torch.save(model.state_dict(), PATH)
         model.load_state_dict(torch.load(PATH))
 
@@ -329,7 +329,7 @@ for epoch in range(num_epochs//2):
         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable ' \
                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
                  f'scale={scale}  {name}'
-        PATH = f'mdu-vsr-customdataset-{params}.pth'
+        PATH = f'{res_path}/mdu-vsr-customdataset-{params}.pth'
         torch.save(model.state_dict(), PATH)
         model.load_state_dict(torch.load(PATH))
 
