@@ -24,6 +24,8 @@ import argparse
 parser = argparse.ArgumentParser()
 # Adding optional argument
 
+
+parser.add_argument("model", type=str, help="model to use")
 parser.add_argument("hr_data", type=str, help="HR Path")
 parser.add_argument("lr_data", type=str, help="LR Path")
 parser.add_argument("batch_size", type=int, help="batch size")
@@ -36,6 +38,7 @@ parser.add_argument("name", type=str, help="model name")
 args = parser.parse_args()
 # -
 
+model_to_use = args.model
 res_path = args.result
 scale = args.scale
 epochs = args.epochs
@@ -131,8 +134,14 @@ print('loaded')
 
 print('Computation device: ', device)
 
-model = mduvsr(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
+if model_to_use == 'mdpsr':
+    model = mdpvsr(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
                kernel_size=(3,3), padding=(1, 1), scale=scale).to(device)
+
+else:
+    model = mduvsr(num_channels=train_loader.dataset[0][0].shape[0],
+                   num_kernels=train_loader.dataset[0][0].shape[1] // 2,
+                   kernel_size=(3, 3), padding=(1, 1), scale=scale).to(device)
 
 print(model)
 print(summary(model, (train_loader.dataset[0][0].shape)))
