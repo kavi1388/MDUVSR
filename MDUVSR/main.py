@@ -134,14 +134,24 @@ print('loaded')
 
 print('Computation device: ', device)
 
-if model_to_use == 'mdpsr':
+if model_to_use == 'mdpvsr':
     model = mdpvsr(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
                kernel_size=(3,3), padding=(1, 1), scale=scale).to(device)
+
+elif model_to_use == 'mduvsr_6defconv':
+    model = mduvsr_6defconv(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1]//2,
+               kernel_size=(3,3), padding=(1, 1), scale=scale).to(device)
+
+elif model_to_use == 'mduvsr_6defconv_pixelshuff':
+    model = mduvsr_6defconv_pixelshuff(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1] // 2,
+    kernel_size=(3, 3), padding = (1, 1), scale = scale).to(device)
 
 else:
     model = mduvsr(num_channels=train_loader.dataset[0][0].shape[0],
                    num_kernels=train_loader.dataset[0][0].shape[1] // 2,
                    kernel_size=(3, 3), padding=(1, 1), scale=scale).to(device)
+
+
 
 print(model)
 print(summary(model, (train_loader.dataset[0][0].shape)))
