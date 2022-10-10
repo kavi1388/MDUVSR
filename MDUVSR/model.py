@@ -263,7 +263,7 @@ class mduvsr_2defconv(nn.Module):
             bias=True)
 
         self.conv = nn.Conv2d(
-            in_channels=num_kernels + num_channels, out_channels=num_channels * scale ** 2,
+            in_channels=num_kernels + num_channels, out_channels=num_channels,
             kernel_size=kernel_size, padding=padding)
 
         self.ddfup2 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
@@ -319,7 +319,7 @@ class mduvsr_1defconv(nn.Module):
             bias=True)
 
         self.conv = nn.Conv2d(
-            in_channels=num_kernels + num_channels, out_channels=num_channels * scale ** 2,
+            in_channels=num_kernels + num_channels, out_channels=num_channels,
             kernel_size=kernel_size, padding=padding)
 
         self.ddfup2 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
