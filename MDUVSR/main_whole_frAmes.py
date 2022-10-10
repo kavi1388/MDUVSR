@@ -116,8 +116,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists(res_path):
     os.makedirs(res_path)
 
-all_hr_data = read_data(hr_path)
-all_lr_data = read_data(lr_path)
+all_hr_data = read_data(hr_path, data_size)
+all_lr_data = read_data(lr_path, data_size)
 print('read')
 train_loader, val_loader = data_load(all_lr_data,all_hr_data, batch_size, workers)
 print('loaded')
