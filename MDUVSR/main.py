@@ -53,26 +53,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists(res_path):
     os.makedirs(res_path)
 
-# +
-# class CustomDataset(Dataset):
-#     def __init__(self, image_data, labels):
-#         self.image_data = image_data
-#         self.labels = labels
-
-#     def __len__(self):
-#         return (len(self.image_data))
-
-#     def __getitem__(self, index):
-#         image = self.image_data[index]
-#         label = self.labels[index]
-#         return (
-#             torch.tensor(image, dtype=torch.float),
-#             torch.tensor(label, dtype=torch.float)
-#         )
-# train_loader = torch.load('train_loader.pt', map_location=torch.device('cpu'))
-# val_loader = torch.load('val_loader.pt', map_location=torch.device('cpu'))
-# -
-
 all_hr_data = read_data(hr_path)
 all_lr_data = read_data(lr_path)
 print('read')
@@ -80,57 +60,6 @@ train_loader, val_loader = data_load(all_lr_data,all_hr_data, batch_size, worker
 print('loaded')
 
 # ### Defining Model
-
-
-
-# +
-# # !pip install patchify
-
-# +
-# import numpy as np
-# from patchify import patchify, unpatchify
-
-# +
-# image = train_loader.dataset[1][0]
-
-# +
-# 180//4
-
-# +
-# image.numpy().shape
-
-# +
-# image.numpy()
-
-# +
-# image.numpy().T.shape
-
-# +
-# with np.printoptions(threshold=np.inf):
-#     print(image.numpy())
-
-# +
-# patches=patchify(image.numpy(), (3,80,45), step=(40))
-
-# +
-# patches.shape
-
-# +
-# image = np.random.rand(15,20,3)
-
-# patches = patchify(image, (3,4,3), step=4) # patch shape [2,2,3]
-
-# +
-# image
-
-# +
-# with np.printoptions(threshold=np.inf):
-#     for i in range(patches.shape[0]):
-#         for j in range(patches.shape[1]):
-#             print(i,j)
-#             patch = patches[i, j]
-#             print(patch)
-# -
 
 print('Computation device: ', device)
 
