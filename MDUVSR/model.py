@@ -49,11 +49,17 @@ class mduvsr(nn.Module):
             in_channels=num_kernels+num_channels, out_channels=num_channels,
             kernel_size=kernel_size, padding=padding)
 
+        # self.conv = nn.Conv2d(
+        #     in_channels=num_kernels + num_channels, out_channels=num_channels * scale ** 2,
+        #     kernel_size=kernel_size, padding=padding)
+
         self.ddfup1 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
                                 scale_factor=1, head=1, kernel_combine="add").cuda()
 
         self.ddfup2 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
                                 scale_factor=scale, head=1, kernel_combine="add").cuda()
+
+
 
         self.batchnorm1 = nn.BatchNorm2d(num_features=num_kernels)
 

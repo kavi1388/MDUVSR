@@ -58,7 +58,9 @@ def read_data(path):
                     img_array = np.swapaxes(img_array, np.where(np.asarray(img_array.shape) == min(img_array.shape))[0][0], 0)
                     # data.append(img_array)
                     patches = patchify(img_array, (3, img_array.shape[1] // 4, img_array.shape[2] // 4), step=(img_array.shape[1] // 8))
-    #                 print(patches.shape)
+                    # print(patches.shape)
+                    # print(f'len(patches) ={len(patches[0])}')
+                    # print(f'Batch size should be {patches.shape[0]*patches.shape[1]*patches.shape[7]}')
                     for i in range(patches.shape[0]):
                         for j in range(patches.shape[1]):
                             for k in range(patches.shape[2]):

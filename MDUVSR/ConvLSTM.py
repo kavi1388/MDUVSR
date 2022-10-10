@@ -40,8 +40,8 @@ class ConvLSTMCell(nn.Module):
         prev_hidden, prev_cell = prev_state
 
         if prev_state[0].size()[0] > batch_size:
-            prev_hidden = prev_state[0][len(prev_state[0])-batch_size:]
-            prev_cell = prev_state[1][len(prev_state[1])-batch_size:]
+            prev_hidden = prev_state[0][:batch_size]
+            prev_cell = prev_state[1][:batch_size]
 #         print(f'prev_state {prev_state}')
 
         # data size is [batch, channel, height, width]

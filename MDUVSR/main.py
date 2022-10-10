@@ -47,6 +47,9 @@ workers = args.workers
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+if not os.path.exists(res_path):
+    os.makedirs(res_path)
+
 # +
 # class CustomDataset(Dataset):
 #     def __init__(self, image_data, labels):
@@ -213,7 +216,7 @@ for epoch in range(num_epochs//2):
         scaler.step(optimizer)
         scaler.update()
         train_loss += loss.item()
-        if batch_num % 5 ==0 :
+        if batch_num % 10 ==0 :
             c+=1
             psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
             ssim += piq.ssim(output.cpu(), target, data_range=255.)
@@ -273,7 +276,7 @@ for epoch in range(num_epochs//2):
         scaler.step(optimizer)
         scaler.update()
         train_loss += loss.item()
-        if batch_num % 5 ==0 :
+        if batch_num % 10 ==0 :
             c += 1
             psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
             ssim += piq.ssim(output.cpu(), target, data_range=255.)
