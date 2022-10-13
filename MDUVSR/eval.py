@@ -32,7 +32,7 @@ parser.add_argument("batch_size", type=int, help="batch size")
 parser.add_argument("workers", type=int, help="workers")
 parser.add_argument("result", type=str, help="result Path (to save)")
 parser.add_argument("scale", type=int, help="downsampling scale")
-parser.add_argument("PATH", type=int, help="path")
+parser.add_argument("PATH", type=str, help="path")
 # Read arguments from command line
 args = parser.parse_args()
 # -
