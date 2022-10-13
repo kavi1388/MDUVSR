@@ -7,18 +7,18 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import argparse
 from patchify import patchify
+from downsample import *
 
 # !pip install patchify
 
 # Initialize parser
 parser = argparse.ArgumentParser()
 # Adding optional argument
-parser.add_argument("hr_data", type=str, help="HR Path")
-parser.add_argument("lr_data", type=str, help="LR Path")
-# parser.add_argument("res_hr_patches", type=str, help="res_hr_patches path")
-# parser.add_argument("res_lr_patches", type=str, help="res_lr_patches path")
-parser.add_argument("batch_size", type=int, help="batch size")
-parser.add_argument("workers", type=int, help="workers")
+# parser.add_argument("hr_data", type=str, help="HR Path")
+# parser.add_argument("lr_data", type=str, help="LR Path")
+# parser.add_argument("scale", type=int, help="res_hr_patches path")
+# parser.add_argument("batch_size", type=int, help="batch size")
+# parser.add_argument("workers", type=int, help="workers")
 
 
 # Read arguments from command line
@@ -43,33 +43,39 @@ parser.add_argument("workers", type=int, help="workers")
 # Use GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Load Data as Numpy Array
-def read_data(path):
-    data = []
-    patch = []
+def read_data(path,scale):
+    hr_data = []
+    lr_data = []
+    # patch = []
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
-            if len(data)<180000:
+            if len(hr_data)<180000:
                 f = os.path.join(dirname, filename)
     #             print(f)
                 if filename.split('.')[-1] == 'jpg':
                     img = Image.open(f)
                     img.load()
                     img_array = np.asarray(img)
-                    img_array = np.swapaxes(img_array, np.where(np.asarray(img_array.shape) == min(img_array.shape))[0][0], 0)
-                    # data.append(img_array)
-                    patches = patchify(img_array, (3, img_array.shape[1] // 4, img_array.shape[2] // 4), step=(img_array.shape[1] // 8))
-                    # print(patches.shape)
-                    # print(f'len(patches) ={len(patches[0])}')
-                    # print(f'Batch size should be {patches.shape[0]*patches.shape[1]*patches.shape[7]}')
+                    img_array_lr = downsample(img_array, scale)
+                    img_array_lr = np.swapaxes(img_array_lr,
+                                            np.where(np.asarray(img_array_lr.shape) == min(img_array_lr.shape))[0][0], 0)
+
+                    patches = patchify(img_array_lr, (3, img_array_lr.shape[1] // 4, img_array_lr.shape[2] // 4),
+                                       step=(img_array_lr.shape[1] // 8))
                     for i in range(patches.shape[0]):
                         for j in range(patches.shape[1]):
                             for k in range(patches.shape[2]):
                                 patch = patches[i, j, k]
-                                data.append(patch)
-    #                             patch = Image.fromarray(patch.T)
-    #                             num = i * patches.shape[1] + j
-    #                             patch.save(f"{respath}/{filename.split('.')[0]}_patch_{num}.jpg")
-    return data
+                                lr_data.append(patch)
+                    #
+                    img_array = np.swapaxes(img_array, np.where(np.asarray(img_array.shape) == min(img_array.shape))[0][0], 0)
+                    patches = patchify(img_array, (3, img_array.shape[1] // 4, img_array.shape[2] // 4), step=(img_array.shape[1] // 8))
+                    for i in range(patches.shape[0]):
+                        for j in range(patches.shape[1]):
+                            for k in range(patches.shape[2]):
+                                patch = patches[i, j, k]
+                                hr_data.append(patch)
+    return hr_data, lr_data
 
 # +
 # data = []

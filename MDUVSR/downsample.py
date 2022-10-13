@@ -13,7 +13,7 @@ def downsample(img, scale):
 
     #     downsample_shape=(img.shape[0]//scale,img.shape[1]//scale,img.shape[2])
 
-    im2 = Image.fromarray(np.uint8(img)).resize((img.shape[1] // scale, img.shape[0] // scale), Image.BICUBIC)
+    im2 = Image.fromarray(np.uint8(img)).resize((img.shape[2] // scale, img.shape[1] // scale), Image.BICUBIC)
     lr_bicubic = np.asarray(im2)
 
     return lr_bicubic
@@ -34,17 +34,17 @@ def gen_lr(frame_path,lr_path,scale):
 
 
 # Initialize parser
-parser = argparse.ArgumentParser()
-# Adding optional argument
-parser.add_argument("hr", type=str, help="HR Path")
-parser.add_argument("lr", type=str, help="LR Path (to save)")
-parser.add_argument("scale", type=int, help="downsampling scale")
-# Read arguments from command line
-args = parser.parse_args()
-
-
-frame_path = args.hr
-lr_path = args.lr
-scale = args.scale
-
-gen_lr(frame_path,lr_path,scale)
+# parser = argparse.ArgumentParser()
+# # Adding optional argument
+# parser.add_argument("hr", type=str, help="HR Path")
+# parser.add_argument("lr", type=str, help="LR Path (to save)")
+# parser.add_argument("scale", type=int, help="downsampling scale")
+# # Read arguments from command line
+# args = parser.parse_args()
+#
+#
+# frame_path = args.hr
+# lr_path = args.lr
+# scale = args.scale
+#
+# gen_lr(frame_path,lr_path,scale)
