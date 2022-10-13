@@ -110,9 +110,13 @@ psnr_val = []
 lpips_val = []
 running_psnr = 0
 
+state=(None,None)
 with torch.no_grad():
     for input, target in test_loader:
-        output = model(input.cuda())
+        state = model(input.cuda(), state[1])
+        state[1][0].detach_()
+        state[1][1].detach_()
+        output = state[0]
         psnr_val.append(piq.psnr(output, target.cuda(), data_range=255., reduction='mean'))
         ssim_val.append(piq.ssim(output, target.cuda(), data_range=255.))
         lpips_val.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
@@ -121,7 +125,7 @@ with torch.no_grad():
         print(f'ssim value ={ssim_val[-1]}')
         print(f'lpips value ={lpips_val[-1]}')
 
-    with open(r'name_quality metrics', 'w') as fp:
+    with open(f'{res_path}/name_quality metrics', 'w') as fp:
         fp.write("\n PSNR")
         for item in psnr_val:
             # write each item on a new line
