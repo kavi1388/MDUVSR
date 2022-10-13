@@ -40,7 +40,6 @@ args = parser.parse_args()
 model_to_use = args.model
 res_path = args.result
 scale = args.scale
-epochs = args.epochs
 PATH = args.PATH
 hr_path = args.hr_data
 lr_path = args.lr_data
