@@ -10,7 +10,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 from torchsummary import summary
-from dataPrep import read_data, data_load
 
 """### Preparing Data"""
 import numpy as np
@@ -19,11 +18,74 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import argparse
 
-# +
+
+def read_data(path, data_size):
+    data = []
+    patch = []
+    for dirname, _, filenames in os.walk(path):
+        for filename in filenames:
+            if len(data) < data_size:
+                f = os.path.join(dirname, filename)
+                #             print(f)
+                if filename.split('.')[-1] == 'jpg':
+                    img = Image.open(f)
+                    img.load()
+                    img_array = np.asarray(img)
+                    img_array = np.swapaxes(img_array,
+                                            np.where(np.asarray(img_array.shape) == min(img_array.shape))[0][0], 0)
+                    data.append(img_array)
+    return data
+
+class CustomDataset(Dataset):
+    def __init__(self, image_data, labels):
+        self.image_data = image_data
+        self.labels = labels
+
+    def __len__(self):
+        return (len(self.image_data))
+
+    def __getitem__(self, index):
+        image = self.image_data[index]
+        label = self.labels[index]
+        return (
+            torch.tensor(image, dtype=torch.float),
+            torch.tensor(label, dtype=torch.float)
+        )
+
+
+def data_load(all_lr_data, all_hr_data, batch_size, workers):
+
+    # Train, Test, Validation splits
+    train_data_hr = all_hr_data[:len(all_hr_data) // 3]
+    train_data_lr = all_lr_data[:len(all_lr_data) // 3]
+    print(f'len of train hr data ={len(train_data_hr)}')
+
+    val_data_hr = all_hr_data[len(all_hr_data) // 3:(len(all_hr_data) // 3) + (len(all_hr_data) // 4)]
+    val_data_lr = all_lr_data[len(all_lr_data) // 3:(len(all_lr_data) // 3) + (len(all_lr_data) // 4)]
+
+    print(f'len of val hr data ={len(val_data_hr)}')
+
+    print(f'hr {len(all_hr_data)}')
+    print(f'lr {len(all_lr_data)}')
+
+    train_data = CustomDataset(np.asarray(train_data_lr), np.asarray(train_data_hr))
+    val_data = CustomDataset(np.asarray(val_data_lr), np.asarray(val_data_hr))
+
+    print(f'dataset created')
+
+    # Load Data as Numpy Array
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+    val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=workers)
+
+    print(f'train {len(train_data_hr)}')
+    print(f'val {len(val_data_hr)}')
+
+    return train_loader, val_loader
+
+
 # Initialize parser
 parser = argparse.ArgumentParser()
 # Adding optional argument
-
 
 parser.add_argument("model", type=str, help="model to use")
 parser.add_argument("hr_data", type=str, help="HR Path")
@@ -34,10 +96,11 @@ parser.add_argument("result", type=str, help="result Path (to save)")
 parser.add_argument("scale", type=int, help="downsampling scale")
 parser.add_argument("epochs", type=int, help="epochs")
 parser.add_argument("name", type=str, help="model name")
+parser.add_argument("data_size", type=int, help="data size")
 # Read arguments from command line
 args = parser.parse_args()
 # -
-
+data_size = args.data_size
 model_to_use = args.model
 res_path = args.result
 scale = args.scale
@@ -53,13 +116,11 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists(res_path):
     os.makedirs(res_path)
 
-all_hr_data = read_data(hr_path)
-all_lr_data = read_data(lr_path)
+all_hr_data = read_data(hr_path, data_size)
+all_lr_data = read_data(lr_path, data_size)
 print('read')
 train_loader, val_loader = data_load(all_lr_data,all_hr_data, batch_size, workers)
 print('loaded')
-
-# ### Defining Model
 
 print('Computation device: ', device)
 
@@ -73,22 +134,6 @@ elif model_to_use == 'mduvsr_6defconv':
 
 elif model_to_use == 'mduvsr_6defconv_pixelshuff':
     model = mduvsr_6defconv_pixelshuff(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1] // 2,
-    kernel_size=(3, 3), padding = (1, 1), scale = scale).to(device)
-
-elif model_to_use == 'mduvsr_1defconv':
-    model = mduvsr_1defconv(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1] // 2,
-    kernel_size=(3, 3), padding = (1, 1), scale = scale).to(device)
-
-elif model_to_use == 'mduvsr_2defconv':
-    model = mduvsr_2defconv(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1] // 2,
-    kernel_size=(3, 3), padding = (1, 1), scale = scale).to(device)
-
-elif model_to_use == 'mdpvsr_1defconv':
-    model = mdpvsr_1defconv(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1] // 2,
-    kernel_size=(3, 3), padding = (1, 1), scale = scale).to(device)
-
-elif model_to_use == 'mdpvsr_2defconv':
-    model = mdpvsr_2defconv(num_channels=train_loader.dataset[0][0].shape[0], num_kernels=train_loader.dataset[0][0].shape[1] // 2,
     kernel_size=(3, 3), padding = (1, 1), scale = scale).to(device)
 
 else:
@@ -157,7 +202,7 @@ num_epochs = epochs
 
 """### Training"""
 
-for epoch in range(num_epochs//2):
+for epoch in range(num_epochs):
     state = (None, None)
     c=0
     train_loss = 0
@@ -214,8 +259,72 @@ for epoch in range(num_epochs//2):
                  f'scale={scale}  {name}'
         PATH = f'{res_path}/mdu-vsr-customdataser-{params}.pth'
         torch.save(model.state_dict(), PATH)
-
         model.load_state_dict(torch.load(PATH))
+
+#
+#
+# optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+#
+# for epoch in range(num_epochs//2):
+#     state = (None, None)
+#     c = 0
+#     train_loss = 0
+#     psnr, ssim = 0, 0
+#     model.train()
+#     st = time.time()
+#     for batch_num, data in enumerate(train_loader, 0):
+#
+#         input, target = data[0].to(device), data[1]
+#         optimizer.zero_grad()
+#         state = model(input.cuda(), state[1])
+#         state[1][0].detach_()
+#         state[1][1].detach_()
+#         output = state[0]
+#         with torch.cuda.amp.autocast():
+#             loss = criterion(output.cuda(), target.cuda())
+#         scaler.scale(loss).backward()
+#         scaler.step(optimizer)
+#         scaler.update()
+#         train_loss += loss.item()
+#         if batch_num % 10 ==0 :
+#             c += 1
+#             psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
+#             ssim += piq.ssim(output.cpu(), target, data_range=255.)
+#             # print(f'batch_num {batch_num}')
+#         # torch.cuda.empty_cache()
+#     train_loss /= len(train_loader.dataset)
+#
+#     psnr_avg= psnr/c
+#     ssim_avg= ssim/c
+#
+#     val_loss = 0
+#     model.eval()
+#     with torch.no_grad():
+#         for input, target in val_loader:
+#             output, _ = model(input.cuda())
+#             res = output.cpu()[-1][0].detach().numpy()
+#             plt.imshow(res)
+#             plt.savefig(f"{res_path}/epoch_{epoch}.png", bbox_inches="tight", pad_inches=0.0)
+#             loss = criterion(output.cuda(), target.cuda())
+#             val_loss += loss.item()
+#
+#     val_loss /= len(val_loader.dataset)
+#
+#     print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
+#         epoch+num_epochs//2, train_loss, val_loss, time.time()-st))
+#     print(f'Train PSNR avg {psnr_avg}')
+#     print(f'Train SSIM avg {ssim_avg} ')
+#
+#     if ssim_avg > ssim_best:
+#         ssim_best = ssim_avg
+#         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable ' \
+#                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
+#                  f'scale={scale}  {name}'
+#         PATH = f'{res_path}/mdu-vsr-customdataset-{params}.pth'
+#         torch.save(model.state_dict(), PATH)
+#         model.load_state_dict(torch.load(PATH))
+
+
 
 
 

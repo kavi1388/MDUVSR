@@ -157,9 +157,9 @@ num_epochs = epochs
 
 """### Training"""
 
-for epoch in range(num_epochs//2):
+for epoch in range(num_epochs):
     state = (None, None)
-    c=0
+    c = 0
     train_loss = 0
     ssim_best = 0
     psnr, ssim =0, 0
@@ -216,7 +216,6 @@ for epoch in range(num_epochs//2):
         torch.save(model.state_dict(), PATH)
 
         model.load_state_dict(torch.load(PATH))
-
 
 
 # test_loader = torch.load('test_loader.pt', map_location=torch.device('cuda'))

@@ -194,7 +194,7 @@ class CharbonnierLoss(nn.Module):
 """### Training"""
 
 scaler = torch.cuda.amp.GradScaler()
-optimizer = optim.AdamW(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
+# optimizer = optim.AdamW(model.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-08, weight_decay=0.01, amsgrad=False)
 
 # criterion = nn.L1Loss()
 criterion = CharbonnierLoss()
@@ -202,64 +202,71 @@ num_epochs = epochs
 
 """### Training"""
 
-for epoch in range(num_epochs//2):
-    state = (None, None)
-    c=0
-    train_loss = 0
-    ssim_best = 0
-    psnr, ssim =0, 0
-    model.train()
+# for epoch in range(num_epochs//2):
+#     state = (None, None)
+#     c=0
+#     train_loss = 0
+#     ssim_best = 0
+#     psnr, ssim =0, 0
+#     model.train()
+#
+#     st = time.time()
+#     for batch_num, data in enumerate(train_loader, 0):
+#
+#         input, target = data[0].to(device), data[1]
+#         optimizer.zero_grad()
+#         state = model(input.cuda(), state[1])
+#         state[1][0].detach_()
+#         state[1][1].detach_()
+#         output = state[0]
+#         with torch.cuda.amp.autocast():
+#             loss = criterion(output.cuda(), target.cuda())
+#         scaler.scale(loss).backward()
+#         scaler.step(optimizer)
+#         scaler.update()
+#         train_loss += loss.item()
+#         if batch_num % 10 ==0 :
+#             c+=1
+#             psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
+#             ssim += piq.ssim(output.cpu(), target, data_range=255.)
+#             # print(f'batch_num {batch_num}')
+#         # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
+#         # torch.cuda.empty_cache()
+#     train_loss /= len(train_loader.dataset)
+#     psnr_avg= psnr/c
+#     ssim_avg= ssim/c
+#
+#     val_loss = 0
+#     model.eval()
+#     with torch.no_grad():
+#         for input, target in val_loader:
+#             output, _ = model(input.cuda())
+#             loss = criterion(output.cuda(), target.cuda())
+#             # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
+#             val_loss += loss.item()
+#
+#     val_loss /= len(val_loader.dataset)
+#
+#     print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
+#         epoch+1, train_loss, val_loss, time.time()-st))
+#     print(f'Train PSNR avg {psnr_avg}')
+#     print(f'Train SSIM avg {ssim_avg}')
+#
+#     if ssim_avg > ssim_best:
+#         ssim_best = ssim_avg
+#         params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
+#                  f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
+#                  f'scale={scale}  {name}'
+#         PATH = f'{res_path}/mdu-vsr-customdataser-{params}.pth'
+#         torch.save(model.state_dict(), PATH)
+#         model.load_state_dict(torch.load(PATH))
 
-    st = time.time()
-    for batch_num, data in enumerate(train_loader, 0):
-
-        input, target = data[0].to(device), data[1]
-        optimizer.zero_grad()
-        state = model(input.cuda(), state[1])
-        state[1][0].detach_()
-        state[1][1].detach_()
-        output = state[0]
-        with torch.cuda.amp.autocast():
-            loss = criterion(output.cuda(), target.cuda())
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
-        train_loss += loss.item()
-        if batch_num % 10 ==0 :
-            c+=1
-            psnr += piq.psnr(output.cpu(), target, data_range=255., reduction='mean')
-            ssim += piq.ssim(output.cpu(), target, data_range=255.)
-            # print(f'batch_num {batch_num}')
-        # lpips.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
-        # torch.cuda.empty_cache()
-    train_loss /= len(train_loader.dataset)
-    psnr_avg= psnr/c
-    ssim_avg= ssim/c
-
-    val_loss = 0
-    model.eval()
-    with torch.no_grad():
-        for input, target in val_loader:
-            output, _ = model(input.cuda())
-            loss = criterion(output.cuda(), target.cuda())
-            # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
-            val_loss += loss.item()
-
-    val_loss /= len(val_loader.dataset)
-
-    print("Epoch:{} Training Loss:{:.2f} Validation Loss:{:.2f} in {:.2f} and SSIM\n".format(
-        epoch+1, train_loss, val_loss, time.time()-st))
-    print(f'Train PSNR avg {psnr_avg}')
-    print(f'Train SSIM avg {ssim_avg}')
-
-    if ssim_avg > ssim_best:
-        ssim_best = ssim_avg
-        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
-                 f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
-                 f'scale={scale}  {name}'
-        PATH = f'{res_path}/mdu-vsr-customdataser-{params}.pth'
-        torch.save(model.state_dict(), PATH)
-        model.load_state_dict(torch.load(PATH))
+params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
+         f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
+         f'scale={scale}  {name}'
+PATH = f'{res_path}/mdu-vsr-customdataser-{params}.pth'
+torch.save(model.state_dict(), PATH)
+model.load_state_dict(torch.load(PATH))
 
 optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
@@ -267,7 +274,7 @@ for epoch in range(num_epochs//2):
     state = (None, None)
     c = 0
     train_loss = 0
-    ssim_best = 0
+    ssim_best = 0.4
     psnr, ssim = 0, 0
     model.train()
     st = time.time()
