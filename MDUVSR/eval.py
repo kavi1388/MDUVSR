@@ -54,13 +54,13 @@ if not os.path.exists(res_path):
 all_hr_data = read_data(hr_path)
 all_lr_data = read_data(lr_path)
 
-test_data = CustomDataset(np.asarray(all_hr_data),np.asarray(all_lr_data))
+test_data = CustomDataset(np.asarray(all_lr_data),np.asarray(all_hr_data))
 print(f'dataset created')
 # Load Data as Numpy Array
 test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=workers)
 
 print('loaded')
-
+print(test_loader.dataset[0][0].shape)
 # ### Defining Model
 
 print('Computation device: ', device)
