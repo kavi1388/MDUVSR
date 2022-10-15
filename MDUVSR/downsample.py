@@ -13,7 +13,7 @@ def downsample(img, scale):
 
     #     downsample_shape=(img.shape[0]//scale,img.shape[1]//scale,img.shape[2])
 
-    im2 = Image.fromarray(np.uint8(img)).resize((img.shape[2] // scale, img.shape[1] // scale), Image.BICUBIC)
+    im2 = Image.fromarray(np.uint8(img)).resize((img.shape[1] // scale, img.shape[0] // scale), Image.BICUBIC)
     lr_bicubic = np.asarray(im2)
 
     return lr_bicubic

@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("model", type=str, help="model to use")
 parser.add_argument("hr_data", type=str, help="HR Path")
-parser.add_argument("lr_data", type=str, help="LR Path")
+# parser.add_argument("lr_data", type=str, help="LR Path")
 parser.add_argument("batch_size", type=int, help="batch size")
 parser.add_argument("workers", type=int, help="workers")
 parser.add_argument("result", type=str, help="result Path (to save)")
@@ -44,7 +44,7 @@ scale = args.scale
 epochs = args.epochs
 name = args.name
 hr_path = args.hr_data
-lr_path = args.lr_data
+# lr_path = args.lr_data
 batch_size = args.batch_size
 workers = args.workers
 
@@ -53,7 +53,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if not os.path.exists(res_path):
     os.makedirs(res_path)
 
-all_hr_data, all_lr_data = read_data(hr_path)
+all_hr_data, all_lr_data = read_data(hr_path, scale)
 # all_lr_data = read_data(lr_path)
 print('read')
 train_loader, val_loader = data_load(all_lr_data,all_hr_data, batch_size, workers)
@@ -191,30 +191,35 @@ for epoch in range(num_epochs):
     psnr_avg= psnr/c
     ssim_avg= ssim/c
 
+    if ssim_avg > ssim_best:
+        ssim_best = ssim_avg
+        params = f'{epoch} , scale={scale} ,ssim = {ssim_best} ,{name}'
+        PATH = f'{res_path}/{params}.pth'
+        torch.save(model.state_dict(), PATH)
+
     val_loss = 0
     model.eval()
+    count = 0
     with torch.no_grad():
         for input, target in val_loader:
             output, _ = model(input.cuda())
             loss = criterion(output.cuda(), target.cuda())
             # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
-            plt.figure(figsize=(20, 10))
-            plt.subplot(131)
-            plt.title('Input')
-            plt.imshow(input.cpu()[-1].detach().numpy().T.astype(int))
-            plt.subplot(132)
-            plt.title('Result')
-            plt.imshow(output.cpu()[-1].detach().numpy().T.astype(int))
-            plt.subplot(133)
-            plt.title('Target')
-            plt.imshow(target.cpu()[-1].detach().numpy().T.astype(int))
-            #         print(input.shape)
-            #         print(output.shape)
-            #         print(target.shape)
-            plt.savefig(f"{res_path}/psnr_{piq.psnr(output.cpu(), target, data_range=255., reduction='mean')} "
-                        f"and ssim_{piq.ssim(output.cpu(), target, data_range=255.)}.png", bbox_inches="tight",
-                        pad_inches=0.0)
+            if count % 500 == 0 and ssim_avg == ssim_best:
+                plt.figure(figsize=(20, 10))
+                plt.subplot(131)
+                plt.title('Input')
+                plt.imshow(input.cpu()[-1].detach().numpy().T.astype(int))
+                plt.subplot(132)
+                plt.title('Result')
+                plt.imshow(output.cpu()[-1].detach().numpy().T.astype(int))
+                plt.subplot(133)
+                plt.title('Target')
+                plt.imshow(target.cpu()[-1].detach().numpy().T.astype(int))
+                plt.savefig(f"{res_path}/psnr_{piq.psnr(output.cpu(), target, data_range=255., reduction='mean')} "
+                            f"and ssim_{piq.ssim(output.cpu(), target, data_range=255.)}.png", bbox_inches="tight",
+                            pad_inches=0.0)
 
     val_loss /= len(val_loader.dataset)
 
@@ -223,15 +228,8 @@ for epoch in range(num_epochs):
     print(f'Train PSNR avg {psnr_avg}')
     print(f'Train SSIM avg {ssim_avg}')
 
-    if ssim_avg > ssim_best:
-        ssim_best = ssim_avg
-        params = f'{epochs} epochs, charbonnier, 1 dfup,1 convlstm, 3 deformable,' \
-                 f'kernel_size={(3, 3)}, padding={(1, 1)}, activation={"relu"},' \
-                 f'scale={scale}  {name}'
-        PATH = f'{res_path}/mdu-vsr-customdataser-{params}.pth'
-        torch.save(model.state_dict(), PATH)
 
-        model.load_state_dict(torch.load(PATH))
+        # model.load_state_dict(torch.load(PATH))
 
 
 
