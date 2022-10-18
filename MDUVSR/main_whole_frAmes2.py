@@ -18,13 +18,15 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import argparse
 from downsample import *
+from tkinter import Tcl
 
 def read_data(path,scale,data_size):
     hr_data = []
     lr_data = []
     # patch = []
     for dirname, _, filenames in os.walk(path):
-        for filename in filenames:
+        files = Tcl().call('lsort', '-dict', filenames)
+        for filename in files:
             if len(hr_data)<data_size:
                 f = os.path.join(dirname, filename)
     #             print(f)
@@ -257,17 +259,22 @@ for epoch in range(num_epochs):
             # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
             if count % 500 == 0 and ssim_avg == ssim_best:
-                plt.figure(figsize=(20, 10))
-                plt.subplot(131)
+                if not os.path.exists(f'{res_path}/{params}'):
+                    os.makedirs(f'{res_path}/{params}')
+                plt.figure(figsize=(40, 10))
+                plt.subplot(141)
                 plt.title('Input')
                 plt.imshow(input.cpu()[-1].detach().numpy().T.astype(int))
-                plt.subplot(132)
-                plt.title('Result')
+                plt.subplot(142)
+                plt.title('Our Result')
                 plt.imshow(output.cpu()[-1].detach().numpy().T.astype(int))
-                plt.subplot(133)
+                plt.subplot(143)
                 plt.title('Target')
                 plt.imshow(target.cpu()[-1].detach().numpy().T.astype(int))
-                plt.savefig(f"{res_path}/psnr_{piq.psnr(output.cpu(), target, data_range=255., reduction='mean')} "
+                plt.subplot(144)
+                plt.title('Bicubic')
+                plt.imshow(cv2.resize(input.cpu()[-1].detach().numpy().T, (target.shape[2],target.shape[3]), interpolation= cv2.INTER_LINEAR))
+                plt.savefig(f"{res_path}/{params}/psnr_{piq.psnr(output.cpu(), target, data_range=255., reduction='mean')} "
                             f"and ssim_{piq.ssim(output.cpu(), target, data_range=255.)}.png", bbox_inches="tight",
                             pad_inches=0.0)
 

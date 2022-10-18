@@ -49,16 +49,8 @@ class mduvsr(nn.Module):
             in_channels=num_kernels+num_channels, out_channels=num_channels,
             kernel_size=kernel_size, padding=padding)
 
-        # self.conv = nn.Conv2d(
-        #     in_channels=num_kernels + num_channels, out_channels=num_channels * scale ** 2,
-        #     kernel_size=kernel_size, padding=padding)
-
-        self.ddfup1 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
-                                scale_factor=1, head=1, kernel_combine="add").cuda()
-
         self.ddfup2 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
                                 scale_factor=scale, head=1, kernel_combine="add").cuda()
-
 
 
     def forward(self, X, state=None):
@@ -91,7 +83,6 @@ class mduvsr_6defconv(nn.Module):
             input_size=num_channels,  hidden_size =num_kernels,
             kernel_size=kernel_size, padding=padding)
 
-
         self.deformable_convolution1 = DeformableConv2d(
             in_channels=num_kernels+num_channels,
             out_channels=num_kernels,
@@ -118,24 +109,39 @@ class mduvsr_6defconv(nn.Module):
             padding=padding[0],
             bias=True)
 
+        self.deformable_convolution4 = DeformableConv2d(
+            in_channels=num_kernels+num_channels,
+            out_channels=num_kernels,
+            kernel_size=kernel_size[0],
+            stride=1,
+            padding=padding[0],
+            bias=True)
+
+        # Add rest of the layers
+
+        self.deformable_convolution5 = DeformableConv2d(
+            in_channels=num_kernels+num_channels,
+            out_channels=num_kernels,
+            kernel_size=kernel_size[0],
+            stride=1,
+            padding=padding[0],
+            bias=True)
+
+        self.deformable_convolution6 = DeformableConv2d(
+            in_channels=num_kernels+num_channels,
+            out_channels=num_kernels,
+            kernel_size=kernel_size[0],
+            stride=1,
+            padding=padding[0],
+            bias=True)
+
         # Add Convolutional Layer to predict output frame
         self.conv = nn.Conv2d(
             in_channels=num_kernels+num_channels, out_channels=num_channels,
             kernel_size=kernel_size, padding=padding)
 
-        # self.conv = nn.Conv2d(
-        #     in_channels=num_kernels + num_channels, out_channels=num_channels * scale ** 2,
-        #     kernel_size=kernel_size, padding=padding)
-
-        self.ddfup1 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
-                                scale_factor=1, head=1, kernel_combine="add").cuda()
-
         self.ddfup2 = DDFUpPack(in_channels=num_channels, kernel_size=kernel_size[0],
                                 scale_factor=scale, head=1, kernel_combine="add").cuda()
-
-
-
-        self.batchnorm1 = nn.BatchNorm2d(num_features=num_kernels)
 
     def forward(self, X, state=None):
         # Forward propagation through all the layers
@@ -150,11 +156,11 @@ class mduvsr_6defconv(nn.Module):
         x = torch.cat((x,lr),1)
         x = self.deformable_convolution3(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution3(x)
+        x = self.deformable_convolution4(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution3(x)
+        x = self.deformable_convolution5(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution3(x)
+        x = self.deformable_convolution6(x)
         x = torch.cat((x,lr),1)
         x = self.conv(x)
         output = self.ddfup2(x)
@@ -200,6 +206,32 @@ class mduvsr_6defconv_pixelshuff(nn.Module):
             padding=padding[0],
             bias=True)
 
+        self.deformable_convolution4 = DeformableConv2d(
+            in_channels=num_kernels+num_channels,
+            out_channels=num_kernels,
+            kernel_size=kernel_size[0],
+            stride=1,
+            padding=padding[0],
+            bias=True)
+
+        # Add rest of the layers
+
+        self.deformable_convolution5 = DeformableConv2d(
+            in_channels=num_kernels+num_channels,
+            out_channels=num_kernels,
+            kernel_size=kernel_size[0],
+            stride=1,
+            padding=padding[0],
+            bias=True)
+
+        self.deformable_convolution6 = DeformableConv2d(
+            in_channels=num_kernels+num_channels,
+            out_channels=num_kernels,
+            kernel_size=kernel_size[0],
+            stride=1,
+            padding=padding[0],
+            bias=True)
+
         self.conv = nn.Conv2d(
             in_channels=num_kernels + num_channels, out_channels=num_channels * scale ** 2,
             kernel_size=kernel_size, padding=padding)
@@ -220,11 +252,11 @@ class mduvsr_6defconv_pixelshuff(nn.Module):
         x = torch.cat((x,lr),1)
         x = self.deformable_convolution3(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution3(x)
+        x = self.deformable_convolution4(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution3(x)
+        x = self.deformable_convolution5(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution3(x)
+        x = self.deformable_convolution6(x)
         x = torch.cat((x,lr),1)
         x = self.conv(x)
         output = self.up_block(x)
@@ -254,7 +286,7 @@ class mduvsr_2defconv(nn.Module):
 
         # Add rest of the layers
 
-        self.deformable_convolution = DeformableConv2d(
+        self.deformable_convolution2 = DeformableConv2d(
             in_channels=num_kernels+num_channels,
             out_channels=num_kernels,
             kernel_size=kernel_size[0],
@@ -277,9 +309,9 @@ class mduvsr_2defconv(nn.Module):
         output_convlstm = self.convlstm1(X,state)
         x = output_convlstm
         x = torch.cat((x[0],lr),1)
-        x = self.deformable_convolution(x)
+        x = self.deformable_convolution1(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution(x)
+        x = self.deformable_convolution2(x)
         x = torch.cat((x,lr),1)
         x = self.conv(x)
         output = self.ddfup2(x)
@@ -309,15 +341,6 @@ class mduvsr_1defconv(nn.Module):
             bias=True)
 
         # Add rest of the layers
-
-        self.deformable_convolution = DeformableConv2d(
-            in_channels=num_kernels+num_channels,
-            out_channels=num_kernels,
-            kernel_size=kernel_size[0],
-            stride=1,
-            padding=padding[0],
-            bias=True)
-
         self.conv = nn.Conv2d(
             in_channels=num_kernels + num_channels, out_channels=num_channels,
             kernel_size=kernel_size, padding=padding)
@@ -333,7 +356,7 @@ class mduvsr_1defconv(nn.Module):
         output_convlstm = self.convlstm1(X,state)
         x = output_convlstm
         x = torch.cat((x[0],lr),1)
-        x = self.deformable_convolution(x)
+        x = self.deformable_convolution1(x)
         x = torch.cat((x,lr),1)
         x = self.conv(x)
         output = self.ddfup2(x)
@@ -423,8 +446,7 @@ class mdpvsr_2defconv(nn.Module):
             input_size=num_channels,  hidden_size =num_kernels,
             kernel_size=kernel_size, padding=padding)
 
-
-        self.deformable_convolution = DeformableConv2d(
+        self.deformable_convolution1 = DeformableConv2d(
             in_channels=num_kernels+num_channels,
             out_channels=num_kernels,
             kernel_size=kernel_size[0],
@@ -432,6 +454,13 @@ class mdpvsr_2defconv(nn.Module):
             padding=padding[0],
             bias=True)
 
+        self.deformable_convolution2 = DeformableConv2d(
+            in_channels=num_kernels+num_channels,
+            out_channels=num_kernels,
+            kernel_size=kernel_size[0],
+            stride=1,
+            padding=padding[0],
+            bias=True)
         # Add rest of the layers
 
         self.conv = nn.Conv2d(
@@ -447,9 +476,9 @@ class mdpvsr_2defconv(nn.Module):
         output_convlstm = self.convlstm1(X,state)
         x = output_convlstm
         x = torch.cat((x[0],lr),1)
-        x = self.deformable_convolution(x)
+        x = self.deformable_convolution1(x)
         x = torch.cat((x,lr),1)
-        x = self.deformable_convolution(x)
+        x = self.deformable_convolution2(x)
         x = torch.cat((x,lr),1)
         x = self.conv(x)
         output = self.up_block(x)
@@ -468,8 +497,7 @@ class mdpvsr_1defconv(nn.Module):
             input_size=num_channels,  hidden_size =num_kernels,
             kernel_size=kernel_size, padding=padding)
 
-
-        self.deformable_convolution = DeformableConv2d(
+        self.deformable_convolution1 = DeformableConv2d(
             in_channels=num_kernels+num_channels,
             out_channels=num_kernels,
             kernel_size=kernel_size[0],
@@ -492,9 +520,7 @@ class mdpvsr_1defconv(nn.Module):
         output_convlstm = self.convlstm1(X,state)
         x = output_convlstm
         x = torch.cat((x[0],lr),1)
-        x = self.deformable_convolution(x)
-        x = torch.cat((x,lr),1)
-        x = self.deformable_convolution(x)
+        x = self.deformable_convolution1(x)
         x = torch.cat((x,lr),1)
         x = self.conv(x)
         output = self.up_block(x)
