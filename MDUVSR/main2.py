@@ -18,6 +18,8 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import argparse
+import cv2
+
 
 # +
 # Initialize parser
@@ -156,10 +158,9 @@ criterion = CharbonnierLoss()
 num_epochs = epochs
 
 """### Training"""
-
 for epoch in range(num_epochs):
     state = (None, None)
-    c = 0
+    c=0
     train_loss = 0
     ssim_best = 0
     psnr, ssim =0, 0
@@ -191,6 +192,7 @@ for epoch in range(num_epochs):
     psnr_avg= psnr/c
     ssim_avg= ssim/c
 
+
     if ssim_avg > ssim_best:
         ssim_best = ssim_avg
         params = f'{epoch} , scale={scale} ,ssim = {ssim_best} ,{name}'
@@ -207,17 +209,22 @@ for epoch in range(num_epochs):
             # lpips_test.append(piq.LPIPS(reduction='mean')(torch.clamp(output, 0, 1), torch.clamp(target.cuda(), 0, 255)))
             val_loss += loss.item()
             if count % 500 == 0 and ssim_avg == ssim_best:
-                plt.figure(figsize=(20, 10))
-                plt.subplot(131)
+                if not os.path.exists(f'{res_path}/{params}'):
+                    os.makedirs(f'{res_path}/{params}')
+                plt.figure(figsize=(40, 10))
+                plt.subplot(141)
                 plt.title('Input')
                 plt.imshow(input.cpu()[-1].detach().numpy().T.astype(int))
-                plt.subplot(132)
-                plt.title('Result')
+                plt.subplot(142)
+                plt.title('Our Result')
                 plt.imshow(output.cpu()[-1].detach().numpy().T.astype(int))
-                plt.subplot(133)
+                plt.subplot(143)
                 plt.title('Target')
                 plt.imshow(target.cpu()[-1].detach().numpy().T.astype(int))
-                plt.savefig(f"{res_path}/psnr_{piq.psnr(output.cpu(), target, data_range=255., reduction='mean')} "
+                plt.subplot(144)
+                plt.title('Bicubic')
+                plt.imshow(cv2.resize(input.cpu()[-1].detach().numpy().T, (target.shape[2],target.shape[3]), interpolation= cv2.INTER_LINEAR).astype(int))
+                plt.savefig(f"{res_path}/{params}/psnr_{piq.psnr(output.cpu(), target, data_range=255., reduction='mean')} "
                             f"and ssim_{piq.ssim(output.cpu(), target, data_range=255.)}.png", bbox_inches="tight",
                             pad_inches=0.0)
 
@@ -227,7 +234,6 @@ for epoch in range(num_epochs):
         epoch+1, train_loss, val_loss, time.time()-st))
     print(f'Train PSNR avg {psnr_avg}')
     print(f'Train SSIM avg {ssim_avg}')
-
 
         # model.load_state_dict(torch.load(PATH))
 

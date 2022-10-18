@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import argparse
 from downsample import *
 from tkinter import Tcl
+import cv2
 
 def read_data(path,scale,data_size):
     hr_data = []
@@ -273,7 +274,7 @@ for epoch in range(num_epochs):
                 plt.imshow(target.cpu()[-1].detach().numpy().T.astype(int))
                 plt.subplot(144)
                 plt.title('Bicubic')
-                plt.imshow(cv2.resize(input.cpu()[-1].detach().numpy().T, (target.shape[2],target.shape[3]), interpolation= cv2.INTER_LINEAR))
+                plt.imshow(cv2.resize(input.cpu()[-1].detach().numpy().T, (target.shape[2],target.shape[3]), interpolation= cv2.INTER_LINEAR).astype(int))
                 plt.savefig(f"{res_path}/{params}/psnr_{piq.psnr(output.cpu(), target, data_range=255., reduction='mean')} "
                             f"and ssim_{piq.ssim(output.cpu(), target, data_range=255.)}.png", bbox_inches="tight",
                             pad_inches=0.0)
