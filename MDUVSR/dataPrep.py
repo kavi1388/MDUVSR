@@ -8,6 +8,7 @@ import numpy as np
 import argparse
 from patchify import patchify
 from downsample import *
+from tkinter import Tcl
 
 # !pip install patchify
 
@@ -48,7 +49,8 @@ def read_data(path,scale):
     lr_data = []
     # patch = []
     for dirname, _, filenames in os.walk(path):
-        for filename in filenames:
+        files = Tcl().call('lsort', '-dict', filenames)
+        for filename in files:
             if len(hr_data)<100000:
                 f = os.path.join(dirname, filename)
     #             print(f)
